@@ -18,7 +18,7 @@ x86_32:
 
     $ wget -c http://mirror.pnl.gov/ubuntu//pool/main/libn/libnotify/libnotify1_0.4.5-1ubuntu3_i386.deb 
 
-c) - Install the library
+c) Install the library
 
 x86_64:  
 
