@@ -1,12 +1,51 @@
-#Modified 3DSP driver source
+#Patched 3DSP driver (tested on Ubuntu 13.04 with network manager)
 
-I tried to compile the 3DSP source available at [3DSP official page](http://www.3dsp.com.cn), but it didn't work with Ubuntu 11.04, so I made some changes in the code and it works :)
+a) First, you should install all dependencies:
 
-First, you should install all dependencies:
+    $ sudo apt-get install build-essential linux-headers-`uname -r`
 
-    $ sudo aptitude install build-essential linux-headers-`uname -r`
+b) Download and install the library libnotify1 through the link:
 
-With all dependencies satisfied, just clone this git repository and run Install\_3DSP.sh:
+http://packages.ubuntu.com/lucid/libnotify1
+
+You can download the library libnotify1 with the wget tool: 
+
+x86_64: 
+$ wg et-c http://mirror.pnl.gov/ubuntu//pool/main/libn/libnotify/libnotify1_0.4.5-1ubuntu3_amd64.deb
+
+x86_32:
+$ wget-c http://mirror.pnl.gov/ubuntu//pool/main/libn/libnotify/libnotify1_0.4.5-1ubuntu3_i386.deb 
+
+c) - Install the library
+
+x86_64:  
+
+$ sudo dpkg-i libnotify1_0.4.5-1ubuntu3_amd64.deb 
+
+x86_32: 
+$ sudo dpkg-i libnotify1_0.4.5-1ubuntu3_i386.deb 
+
+d) Copy the library libnotify1 to the respective folder (x86_64 / x86_32)
+
+x86_64: 
+$ sudo cp / usr/lib/libnotify.so.1.1.3 / usr/lib/x86_64-linux-gnu /  
+
+x86_32: 
+$ sudo cp / usr/lib/libnotify.so.1.1.3 / usr / lib / i386-linux-gnu /
+  
+e) make symlink with the command:
+
+x86_64: 
+$ sudo ln-sf / usr/lib/x86_64-linux-gnu/libnotify.so.1.1.3 / usr/lib/x86_64-linux-gnu/libnotify.so.1 
+
+x86_32:
+$ sudo ln-sf / usr / lib/i386-linux-gnu/libnotify.so.1.1.3 / usr/lib/i386-linux-gnu/libnotify.so.1 
+  
+f) Using GIT download the device drivers:
+  
+$ Git clone https://github.com/Alamot/3dsp.git
+
+g) With all dependencies satisfied, just clone this git repository and run Install\_3DSP.sh:
 
     $ git clone http://github.com/reyiyo/3dsp.git
     $ cd 3dsp
@@ -17,19 +56,14 @@ If you don't use git, just download the source from Github, extract it and run I
     $ curl http://github.com/reyiyo/3dsp/tarball/master -o 3dsp.tar.gz
     $ tar -xvzf 3dsp.tar.gz
     $ cd 3dsp
-    $ sudo bash Install_3DSP.sh
+    $ sudo bash Install_3DSP.sh 
 
-If you are using Ubuntu with Unity desktop, the uWB and Wifi Radar icon will not appear in the systray. You will have to do one aditional step, that you can find it here:
+h) reboot your system & enjoy. :)
 
-(In spanish): http://tuamigotetieneganas.blogspot.com/2011/04/unity-area-de-notificacion-systray.html
+[ACKNOWLEDGEMENTS]
+This patch is due to many people:
+Reyiyo: https://github.com/reyiyo/3dsp
+Eriton Benevides: http://eritonb.blogspot.gr/2012/05/3dsp-bluew2310-u-no-ubuntu-1204-kernel.html
+Aku-Aku: http://ubuntuforums.org/showthread.php?t=1234213&page=5 
 
-If you have any question, contact me: reyiyo [at] gmail [dot] com
-
-[UPDATE]
-I wanna thank you all for your mails and blog comments. I've received many questions about if I'm going to make this
-drivers work with the new Ubuntu version... The answer is maybe.
-I don't have tha bangho machine to test them in Ubuntu, I don't have much time right now and also I don't know wich
-is the problem and if I can solve it so the only thing I can say is that I promise to start working on it in a few
-weeks. If you're interested in the news, please suscribe to this repo or to my blog and as soon as I have some news,
-I'll publish them.
-Again, thank you all!!
+ThankS! :)
