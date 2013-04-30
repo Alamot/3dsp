@@ -1,0 +1,8 @@
+wifi-radar for Debian
+---------------------
+
+dhclient3 is default DHCP client on Ubuntu and Debian. There is menu 
+entry in Gnome under Applications, Internet for easier access to program. 
+And, instead of sudo, this version uses gksudo, gtk frontend for sudo.
+
+ -- Ante Karamatic <ivoks@grad.hr>, Wed, 11 May 2005 21:48:05 +0200

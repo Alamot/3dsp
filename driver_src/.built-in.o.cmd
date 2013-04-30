@@ -1,0 +1,1 @@
+cmd_/home/alamot/3dsp/driver_src/built-in.o :=  ld -m elf_i386   -r -o /home/alamot/3dsp/driver_src/built-in.o /home/alamot/3dsp/driver_src/bus/built-in.o /home/alamot/3dsp/driver_src/new_bluetooth/built-in.o /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/built-in.o /home/alamot/3dsp/driver_src/wlan/built-in.o /home/alamot/3dsp/driver_src/private/wlan_priv/built-in.o 

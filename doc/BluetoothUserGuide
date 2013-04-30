@@ -1,0 +1,56 @@
+Command you need use
+====================
+Please run the following command with root privilege.
+
+hciconfig -a
+To check the status of Bluetooth device 
+
+hciconfig hci0 up
+To open Bluetooth device. If you did not see any Bluetooth device when you run hciconfig -a in the
+previous step. Please run hciconfig hci0 up.
+
+hcitool inq
+To look for Bluetooth device nearby(BD address of Bluetooth device beside will be displayed here)
+
+pand -c 00:11:22:33:44:55 -d GN
+To connect PAN servie of the other side Bluetooth device(replace 00:1:22:33:44:55 with BD adress of 
+Bluetooth device to be connected).
+
+hidd --search
+To connect Bluetooth Mouse or Keyboard(have Bluetooth Mouse or Keyboard stand scan mode, Bluetooth 
+Mouse or Keyboard found will be connected automatically) 
+
+Hidd --server
+To open Bluetooth hid service(Bluetooth Mouse or Keyboard will be re-connected while moving mouse or 
+knocking keyboard). 
+
+Sending file
+============
+Right-click Bluetooth icon of system tray on the top-right corner of screen
+then click "send file...", and open browser to select the file you want to
+send, click "Connect" to complet it.
+
+please get more details with "command -h" to use the above command.
+
+
+A2DP service: 
+==============
+right-click the earphone you want to connect, and select "Connect A2DP Service".
+After the A2DP service is connected, right-click louderhailer icon from the top-right of the screen
+and open "Sound Preferences" dialog; 
+click Hardwre selection card, select the earphone you want to set in the "Choose a device to configure" list; 
+select "High Fidelity Playback(A2DP)" in the list of profile; 
+then click Output selection card, select earphone device in the "Choose a device for sound output" list.
+click "Close"; OK, sound output setup is completed;
+at last, open Mplayer to play music, then beautiful music is playing in the Bluetooth earphone.
+
+SCO service:
+============
+right-click the earphone you want to connect, and select "Connect Headset Service".
+After the Headset service is connected, right-click louderhailer icon from the top-right of the screen
+and open "Sound Preferences dialog"; 
+click Hardwre selection card, select the earphone you want to set in the "Choose a device to configure" list; 
+select "Telephone Duplex(HSP/HFP) in the list of profile; 
+then click Output selection card, select earphone device in the Choose a device for sound output.
+click close; OK, sound output setup is completed;
+at last, open Mplayer to play music, then beautiful music is playing in the Bluetooth earphone.

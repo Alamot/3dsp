@@ -1,0 +1,44 @@
+3DSP WLAN&BT card
+*****************
+Copyright (c) 2003-2010, 3DSP Corporation, all rights reserved. 
+
+
+Note: For compiling the drivers, the following components are required:
+	build-essential
+	linux-headers-(kernel version)
+
+
+Extraction and installation
+===========================
+
+To extract run:
+	#tar zxvf BlueW-2310U_3.0.4_100820.tar.gz 
+
+To compile and install run:
+	#cd BlueW-2310U_3.0.4_100820
+	#sudo bash Install_3DSPUSB.sh
+
+Starting uWB
+============
+
+	Applications -> Accessories -> 3DSP uWB
+
+Starting 3DSP WiFi Radar
+========================
+
+	Applications -> Accessories -> 3DSP WiFi Radar
+
+
+Uninstall the drivers and utilities
+===================================
+	#sudo bash /usr/local/3DSP/usb/Uninstall_3DSPUSB.sh
+
+
+Note: If your PC support hotkey, you can edit "HOTKEYFLAG=1" in the file "/usr/local/3DSP/usb/wbusb.conf".
+
+
+Information
+===========
+Mailing lists:
+        tech-support@3dsp.com.cn
+

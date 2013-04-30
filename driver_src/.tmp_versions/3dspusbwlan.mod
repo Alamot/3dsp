@@ -1,0 +1,2 @@
+/home/alamot/3dsp/driver_src/wlan/3dspusbwlan.ko
+/home/alamot/3dsp/driver_src/wlan/tdsp_memory.o /home/alamot/3dsp/driver_src/wlan/tdsp_event.o /home/alamot/3dsp/driver_src/wlan/tdsp_mutex.o /home/alamot/3dsp/driver_src/wlan/tdsp_timer.o /home/alamot/3dsp/driver_src/wlan/tdsp_tasklet.o /home/alamot/3dsp/driver_src/wlan/tdsp_usb.o /home/alamot/3dsp/driver_src/wlan/tdsp_bus.o /home/alamot/3dsp/driver_src/wlan/tdsp_file.o /home/alamot/3dsp/driver_src/wlan/lwlan_ioctl.o /home/alamot/3dsp/driver_src/wlan/lwlan_netdev.o /home/alamot/3dsp/driver_src/wlan/lwlan_entry.o

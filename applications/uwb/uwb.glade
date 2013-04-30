@@ -1,0 +1,79 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://glade.gnome.org/glade-2.0.dtd">
+
+<glade-interface>
+
+<widget class="GtkMenu" id="menu1">
+
+  <child>
+    <widget class="GtkCheckMenuItem" id="bluetooth1">
+      <property name="visible">True</property>
+      <property name="tooltip" translatable="yes">3dsp bluetooth only</property>
+      <property name="label" translatable="yes">bluetooth</property>
+      <property name="use_underline">True</property>
+      <property name="active">False</property>
+      <signal name="activate" handler="on_bluetooth_activate" last_modification_time="Mon, 17 Nov 2008 05:10:40 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkCheckMenuItem" id="wlan1">
+      <property name="visible">True</property>
+      <property name="tooltip" translatable="yes">3dsp wlan only</property>
+      <property name="label" translatable="yes">wlan</property>
+      <property name="use_underline">True</property>
+      <property name="active">False</property>
+      <signal name="activate" handler="on_wlan1_activate" last_modification_time="Tue, 18 Nov 2008 01:39:47 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkCheckMenuItem" id="coexist1">
+      <property name="visible">True</property>
+      <property name="tooltip" translatable="yes">3dsp bt&amp;wlan coexist</property>
+      <property name="label" translatable="yes">coexist</property>
+      <property name="use_underline">True</property>
+      <property name="active">False</property>
+      <signal name="activate" handler="on_coexist1_activate" last_modification_time="Tue, 18 Nov 2008 01:39:47 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkCheckMenuItem" id="unplug1">
+      <property name="visible">True</property>
+      <property name="tooltip" translatable="yes">3dsp bt&amp;wlan unplug</property>
+      <property name="label" translatable="yes">unplug</property>
+      <property name="use_underline">True</property>
+      <property name="active">False</property>
+      <signal name="activate" handler="on_unplug1_activate" last_modification_time="Tue, 18 Nov 2008 01:39:47 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkSeparatorMenuItem" id="分隔符1">
+      <property name="visible">True</property>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="about1">
+      <property name="visible">True</property>
+      <property name="tooltip" translatable="yes">关于</property>
+      <property name="label" translatable="yes">about</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_about1_activate" last_modification_time="Mon, 17 Nov 2008 05:12:01 GMT"/>
+    </widget>
+  </child>
+
+  <child>
+    <widget class="GtkMenuItem" id="exit1">
+      <property name="visible">True</property>
+      <property name="tooltip" translatable="yes">退出</property>
+      <property name="label" translatable="yes">exit</property>
+      <property name="use_underline">True</property>
+      <signal name="activate" handler="on_exit1_activate" last_modification_time="Mon, 17 Nov 2008 05:12:01 GMT"/>
+    </widget>
+  </child>
+</widget>
+
+</glade-interface>

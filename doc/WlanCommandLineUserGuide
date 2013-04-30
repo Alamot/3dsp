@@ -1,0 +1,151 @@
+Set current work domain
+====================
+For example£ºset current work domain as US
+[root@localhost ~]# iwpriv twifiu0 domain 0
+
+Get current work domain
+=====================
+ [root@localhost ~]# iwpriv twifiu0 get_domain
+twifiu0    get_domain:0  
+
+Set TX Power
+==========
+For example£ºset tx power as %50
+[root@localhost ~]# iwpriv twifiu0 tx_power 1
+
+Get TX Power
+===========
+ [root@localhost ~]# iwpriv twifiu0 get_tx_power
+twifiu0    get_tx_power:1  
+ 
+Scan AP
+=======
+[root@localhost ~]# iwlist twifiu0 scan
+twifiu0    Scan completed :
+		Cell 01 - Address: 08:10:73:05:F5:76
+                    ESSID:"netcore"
+                    Mode:Master
+                    Frequency:2.452 GHz
+                    Quality=230/100  Signal level=-25 dBm  Noise level=-95 dBm
+                    Encryption key:off
+                    Bit Rates:1 Mb/s; 2 Mb/s; 5.5 Mb/s; 11 Mb/s
+                    Extra:Beacon Interval:100
+          Cell 02 - Address: 00:14:6C:E0:5F:F4
+                    ESSID:"netgear-spear"
+                    Mode:Master
+                    Frequency:2.467 GHz
+                    Quality=225/100  Signal level=-29 dBm  Noise level=-95 dBm
+                    Encryption key:on
+                    Bit Rates:1 Mb/s; 2 Mb/s; 5.5 Mb/s; 11 Mb/s; 18 Mb/s
+                              24 Mb/s; 36 Mb/s; 54 Mb/s
+                    Extra:Beacon Interval:100
+                    IE: WPA Version 1
+                        Group Cipher : TKIP 
+                        Pairwise Ciphers (1) : TKIP 
+                        Authentication Suites (1) : PSK  
+          Cell 03 - Address: 00:90:4C:91:00:01
+                    ESSID:"Linksys"
+                    Mode:Master
+                    Frequency:2.417 GHz
+                    Quality=213/100  Signal level=-39 dBm  Noise level=-95 dBm
+                    Encryption key:on
+                    Bit Rates:1 Mb/s; 2 Mb/s; 5.5 Mb/s; 11 Mb/s; 18 Mb/s
+                              24 Mb/s; 36 Mb/s; 54 Mb/s
+                    Extra:Beacon Interval:200
+                    IE: IEEE 802.11i/WPA2 Version 1
+                        Group Cipher : CCMP 
+                        Pairwise Ciphers (1) : CCMP 
+                        Authentication Suites (1) : PSK 
+Connect AP
+==========
+Connect with SSID
+[root@localhost ~]# iwconfig twifiu0 essid netcore
+Or
+Connect with Mac address of wireless router
+[root@localhost ~]# iwconfig twifiu0 ap 08:10:73:05:F5:76
+
+Disconnect AP
+============
+ [root@localhost ~]# iwconfig twifiu0 essid off
+
+Config wpa_supplicant
+==================
+[root@localhost ~]# vi /etc/wpa_supplicant/wpa_supplicant.conf
+
+configure Encryption as disable and no authentication type;
+[root@localhost ~]# vi /etc/wpa_supplicant/wpa_supplicant.conf
+
+network={
+	ssid="ASUS"
+	key_mgmt=NONE
+}
+
+configure Encryption as WEP Open type
+[root@localhost ~]# vi /etc/wpa_supplicant/wpa_supplicant.conf
+
+network={
+	ssid="ASUS"
+	key_mgmt=NONE
+	auth_alg=OPEN
+	wep_key0=0123456789
+	wep_key1=*********
+	wep_key2=*********
+	wep_key3=*********
+	wep_tx_keyidx=0
+}
+
+configure Encryption as WEP and shared key as authentication type
+[root@localhost ~]# vi /etc/wpa_supplicant/wpa_supplicant.conf
+
+network={
+	ssid="ASUS"
+	key_mgmt=NONE
+	auth_alg=SHARED
+	wep_key0=0123456789
+	wep_key1=*********
+	wep_key2=*********
+	wep_key3=*********
+	wep_tx_keyidx=0
+}
+
+configure Encryption as TKIP and WPA-PSK as authentication type
+[root@localhost ~]# vi /etc/wpa_supplicant/wpa_supplicant.conf
+
+network={
+        ssid="netgear-spear"
+        pairwise=TKIP
+        group=TKIP
+        proto=WPA
+        key_mgmt=WPA-PSK
+        psk="12345678"
+}
+
+configure Encryption as CCMP and WPA-PSK as authentication type
+[root@localhost ~]# vi /etc/wpa_supplicant/wpa_supplicant.conf
+
+network={
+        ssid="netcore"
+        pairwise=CCMP
+        group=CCMP
+        proto=WPA
+        key_mgmt=WPA-PSK
+        psk="12345678"
+}
+
+configure encryption as CCMP and WPA2-PSK as authentication type
+[root@localhost ~]# vi /etc/wpa_supplicant/wpa_supplicant.conf
+
+network={
+        ssid="netcore"
+        pairwise=CCMP
+        group=CCMP
+        proto=RSN
+        key_mgmt=WPA-PSK
+        psk="12345678"
+}
+
+Start WPA/WPA2 authentication and Encryption:
+=====================================
+ [root@localhost ~]# wpa_supplicant -Dwext -i twifiu0 -c /etc/wpa_supplicant/wpa_supplicant.conf ¨Cdd
+
+Note: for more WPA_supplicant configurations, please reference wpa_

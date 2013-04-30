@@ -1,0 +1,19 @@
+#!/bin/sh
+
+set -e
+
+WLAN=`iwconfig 2>/dev/null |grep IEEE |cut -d' ' -f1| head -n1`
+
+if [ ! -e /etc/wifi-radar.conf ]; then
+	echo "[DEFAULT]" >> /etc/wifi-radar.conf
+	echo "interface = $WLAN" >> /etc/wifi-radar.conf
+	echo "speak_up = False" >> /etc/wifi-radar.conf
+	echo "scan_timeout = 5" >> /etc/wifi-radar.conf
+	echo "commit_required = False" >> /etc/wifi-radar.conf
+	echo "ifup_required = False" >> /etc/wifi-radar.conf
+	echo "auto_profile_order =" >> /etc/wifi-radar.conf
+fi
+chmod 600 /etc/wifi-radar.conf
+
+update-rc.d wifi-radar defaults >/dev/null
+#DEBHELPER#

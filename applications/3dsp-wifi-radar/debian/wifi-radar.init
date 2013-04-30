@@ -1,0 +1,36 @@
+#!/bin/bash
+#
+# Start or stop wifi-radar daemon.
+#
+# Written by Ante Karamatic <ivoks@grad.hr>
+
+PATH=/bin:/usr/bin:/sbin:/usr/sbin
+WR_BIN="/usr/sbin/wifi-radar"
+ETH=`grep interface /etc/wifi-radar.conf  2>/dev/null | cut -d' ' -f3 2>/dev/null`
+PIDFILE="/var/run/wifi-radar-daemon.pid"
+DHCP_PID=`cat /var/run/dhcpcd-wifi.pid 2>/dev/null`
+
+. /lib/lsb/init-functions
+
+case "${1}" in
+("start")
+	log_begin_msg "Starting wifi-radar daemon..."
+	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec "${WR_BIN}" -- -d >/dev/null 2>&1 &
+	exit $?
+	;;
+("stop")
+	log_begin_msg "Stopping wifi-radar daemon..."
+	start-stop-daemon --stop --retry=1 --pidfile $PIDFILE --quiet --exec "${WR_BIN}" >/dev/null 2>&1
+	kill -9 $DHCP_PID >/dev/null 2>&1
+	ifconfig "${ETH}" down >/dev/null 2>&1
+	exit $?
+	;;
+("restart")
+	"${0}" stop
+	"${0}" start
+	;;
+(*)
+	log_success_msg "Usage: /etc/init.d/wifi-radar {start|stop|restart}" >&2
+	exit 3
+	;;
+esac

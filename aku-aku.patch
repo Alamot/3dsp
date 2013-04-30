@@ -1,0 +1,255 @@
+diff -ur original/driver_src/bus/businit.h aku-aku/driver_src/bus/businit.h
+--- original/driver_src/bus/businit.h	2010-11-06 17:11:10.601833760 +0000
++++ aku-aku/driver_src/bus/businit.h	2010-11-10 20:46:05.186770204 +0000
+@@ -49,7 +49,7 @@
+ 
+     #include "basetype.h"
+ 
+-    #define DBG
++//    #define DBG // Uncomment to enable debugging
+ 
+     #define BUS_CONFIG_FILE  "/etc/tdspbus.cfg"
+     #define BUS_CONFIG_SECTION  "busparam"
+@@ -227,6 +227,7 @@
+ 	int( *notify_reset )( struct _TDSPBUS_INTERFACE_DATA *dev, int resetevent );
+ 	int( *notify_initreset )( struct _TDSPBUS_INTERFACE_DATA *dev, int resetevent );
+ 	int( *notify_deatch )( struct _TDSPBUS_INTERFACE_DATA *dev, int reason );
++	void *pUsbDev; // usb_device
+ } TDSPBUS_INTERFACE,  *PTDSPBUS_INTERFACE;
+ 
+ typedef struct _TDSPBUS_DEVICE_DATA
+diff -ur original/driver_src/new_bluetooth/tdsp_bus.c aku-aku/driver_src/new_bluetooth/tdsp_bus.c
+--- original/driver_src/new_bluetooth/tdsp_bus.c	2010-11-06 17:11:08.222836140 +0000
++++ aku-aku/driver_src/new_bluetooth/tdsp_bus.c	2010-11-10 20:46:05.221757828 +0000
+@@ -50,6 +50,8 @@
+ 	int (*notify_reset)(struct _TDSPBUS_INTERFACE_DATA *dev, int resetevent);
+ 	int (*notify_initreset)(struct _TDSPBUS_INTERFACE_DATA *dev, int resetevent);
+ 	int (*notify_deatch)(struct _TDSPBUS_INTERFACE_DATA *dev, int reason);
++
++	void *pUsbDev; // usb_device
+ } TDSPBUS_INTERFACE, *PTDSPBUS_INTERFACE;
+ 
+ void *register_HCI_device(void *dev);
+diff -ur original/driver_src/tdspusbcardinit aku-aku/driver_src/tdspusbcardinit
+--- original/driver_src/tdspusbcardinit	2010-11-06 17:11:10.014839390 +0000
++++ aku-aku/driver_src/tdspusbcardinit	2010-11-10 20:46:05.186770204 +0000
+@@ -25,8 +25,10 @@
+     insmod /usr/local/3DSP/usb/3dspusbbt.ko
+     sleep 0.5
+     mknod  /dev/tdspusbbus c `awk '$2=="3dspusbbus" {print $1}' /proc/devices` 0
++    uwbtool -a combo
+     ;;
+   stop)
++    uwbtool -r
+     rm -f /dev/tdspusbbus
+     rmmod 3dspusbbt
+     rmmod 3dspusbbtpriv
+diff -ur original/driver_src/wlan/lwlan_entry.c aku-aku/driver_src/wlan/lwlan_entry.c
+--- original/driver_src/wlan/lwlan_entry.c	2010-11-06 17:11:08.449833771 +0000
++++ aku-aku/driver_src/wlan/lwlan_entry.c	2010-11-10 20:46:05.225755962 +0000
+@@ -69,16 +69,21 @@
+ #define PM_EVENT_HIBERNATE	0x0004
+ #endif
+ 
++// #define DEBUG // uncomment to enable verbose logging of all driver functions
++
+ int tdsp_print(const char * fmt,...) 
+ {
++#ifdef DEBUG
+     va_list args;
+ 	int r;
+ 
+ 	va_start(args, fmt);
+ 	r = vprintk(fmt, args);
+ 	va_end(args);
+-
+ 	return r;
++#else
++	return 0;
++#endif
+     //printk(fmt,...);
+ }
+ 
+@@ -201,7 +206,7 @@
+ 	struct usb_device *udev = interface_to_usbdev(intf);
+ 	struct usb_host_endpoint  *ep;
+ 	struct usb_host_interface *uif;
+-	void * pBusInterfaceData;
++	PTDSPBUS_INTERFACE pBusInterfaceData;
+ 	//PBT_DEVICE_EXT	devExt = NULL;
+ 	//struct hci_dev *hdev = NULL;
+ 	int i;
+@@ -281,7 +286,8 @@
+ 
+ #ifdef WB_PROXY_FLAG	
+ 
+-	pBusInterfaceData = Bus_new_interface((void *) pAdap);
++	pBusInterfaceData = (PTDSPBUS_INTERFACE)Bus_new_interface((void *) pAdap);
++	pBusInterfaceData->pUsbDev = udev; //aku-aku
+ 	if (pBusInterfaceData == NULL)
+ 	{
+ 		printk("%s: register wlan USB driver to WB_PROXY failed!!\n", __FUNCTION__ );	
+diff -ur original/driver_src/wlan/lwlan_ioctl.c aku-aku/driver_src/wlan/lwlan_ioctl.c
+--- original/driver_src/wlan/lwlan_ioctl.c	2010-11-06 17:11:08.434868043 +0000
++++ aku-aku/driver_src/wlan/lwlan_ioctl.c	2010-11-10 20:46:05.225755962 +0000
+@@ -41,7 +41,7 @@
+ #include "usbwlan_version.h"
+ //static char* TDSP_FILE_INDICATOR="IOTCL";
+ 
+-#define DEBUG_OPEN
++//#define DEBUG_OPEN // uncomment this line to enable debug
+ #ifdef DEBUG_OPEN
+ #define _ioctl_print(arg...)			printk(arg)
+ #else
+@@ -425,6 +425,8 @@
+ #if WIRELESS_EXT > 15		// fdeng@080903,	2.4.x linux doesn't support this!
+ 	range->enc_capa = IW_ENC_CAPA_WPA |  IW_ENC_CAPA_WPA2 |
+ 			  IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_CIPHER_CCMP;
++	// driver doesn't scan properly range->scan_capa = IW_SCAN_CAPA_ESSID;
++
+ #endif	
+ 
+ 	range->pmp_flags = IW_POWER_ON;
+diff -ur original/driver_src/wlan/lwlan_netdev.c aku-aku/driver_src/wlan/lwlan_netdev.c
+--- original/driver_src/wlan/lwlan_netdev.c	2010-11-06 17:11:08.430867954 +0000
++++ aku-aku/driver_src/wlan/lwlan_netdev.c	2010-11-10 20:46:05.229754586 +0000
+@@ -31,6 +31,7 @@
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/netdevice.h>
++#include <linux/usb.h>
+ #include <net/iw_handler.h>
+ #include <linux/wireless.h>
+ #include <linux/etherdevice.h>
+@@ -40,6 +41,7 @@
+ #include "lwlan_netdev.h"
+ #include "lwlan_ioctl.h"
+ #include "tdsp_memory.h"
++#include "tdsp_bus.h"
+ 
+ static char* TDSP_FILE_INDICATOR="NETDV";
+ 
+@@ -218,6 +220,10 @@
+ 	//set wlan device's mac addr
+ 	tdsp_memcpy(netdev->dev_addr, Adap_Get_Mac_Addr(adapt), 6);
+ 
++	Adap_Set_Netdev(adapt,netdev);    // save netdev in wlan sturct
++	PTDSPBUS_INTERFACE pIntf = (PTDSPBUS_INTERFACE)Adap_Get_BusInf(adapt);
++	struct usb_device *udev = (struct usb_device *)pIntf->pUsbDev;
++	SET_NETDEV_DEV(netdev,&(udev->dev));
+ 	if (register_netdev(netdev))
+ 	{
+ 		printk("[%s:%05d] register_netdev failed!!!\n ", TDSP_FILE_INDICATOR,__LINE__);
+@@ -226,7 +232,6 @@
+ 	}
+ 
+     
+-	Adap_Set_Netdev(adapt,netdev);    // save netdev in wlan sturct
+ 	//pAdap->net_dev = netdev;			// save netdev in wlan sturct
+     
+ 	// tdsp_spin_lock_init(&(pAdap->netq_ctrl_lock));
+diff -ur original/driver_src/wlan/tdsp_bus.c aku-aku/driver_src/wlan/tdsp_bus.c
+--- original/driver_src/wlan/tdsp_bus.c	2010-11-06 17:11:08.426867166 +0000
++++ aku-aku/driver_src/wlan/tdsp_bus.c	2010-11-10 20:46:05.225755962 +0000
+@@ -12,47 +12,9 @@
+ #include <linux/slab.h>
+ //static char* TDSP_FILE_INDICATOR="TDBUS";
+ 
+-#define MAX_VERSIONID_LEN    64
+ #define BUS_DEVICE_SERIAL_NO_WLAN		0x2
+ 
+-typedef struct _TDSPBUS_INTERFACE_DATA 
+-{
+-	// A back pointer to the bus
+-	void *ParentFdo;
+ 
+-	void *pPciDev; //pci_dev
+-	void *pBtDev; //PBT_DEVICE_EXT
+-	
+-	// An array of (zero terminated wide character strings).
+-	// The array itself also null terminated
+-	unsigned char version[MAX_VERSIONID_LEN]; // send to bus driver
+-	
+-	unsigned long c8051_version;
+-
+-	unsigned long dsp_version;
+-	
+-	// Unique serail number of the device on the bus
+-	unsigned char SerialNo; // send to bus driver
+-	
+-	unsigned char ResetFlag;	// Reset Flag
+-	unsigned char ParaFlag;	/*from wb config.
+-			bit0~bit7
+-			bit0:		hotkey
+-			bit12:	antenna	1: 0      2: 1        other:auto
+-			*/
+-	
+-	// Device State
+-	unsigned long devstate; //set by bus driver.
+-	
+-	// Callback operation
+-	int (*open)(struct _TDSPBUS_INTERFACE_DATA *dev);
+-	int (*close)(struct _TDSPBUS_INTERFACE_DATA *dev);
+-	int (*suspend)(struct _TDSPBUS_INTERFACE_DATA *dev, unsigned int state);
+-	int (*resume)(struct _TDSPBUS_INTERFACE_DATA *dev);
+-	int (*notify_reset)(struct _TDSPBUS_INTERFACE_DATA *dev, int resetevent);
+-	int (*notify_initreset)(struct _TDSPBUS_INTERFACE_DATA *dev, int resetevent);
+-	int (*notify_deatch)(struct _TDSPBUS_INTERFACE_DATA *dev, int reason);
+-} TDSPBUS_INTERFACE, *PTDSPBUS_INTERFACE;
+ 
+ #define BUS_APP_NAME	"WLAN"
+ #define BUS_PRINTK(fmt, arg...)		{	\
+diff -ur original/driver_src/wlan/tdsp_bus.h aku-aku/driver_src/wlan/tdsp_bus.h
+--- original/driver_src/wlan/tdsp_bus.h	2010-11-06 17:11:08.445842831 +0000
++++ aku-aku/driver_src/wlan/tdsp_bus.h	2010-11-10 20:46:05.225755962 +0000
+@@ -12,6 +12,7 @@
+   *               any unauthorized person without prior written consent of 3DSP
+   *               Corporation.		
+   ***********************************************************************/
++#define MAX_VERSIONID_LEN    64
+ 
+ #ifndef _TDSP_BUS_H_
+ #define _TDSP_BUS_H_
+@@ -28,3 +29,42 @@
+ unsigned char Bus_get_antenna_flag(void *pIntf);
+ 
+ #endif
++typedef struct _TDSPBUS_INTERFACE_DATA 
++{
++	// A back pointer to the bus
++	void *ParentFdo;
++
++	void *pPciDev; //pci_dev
++	void *pBtDev; //PBT_DEVICE_EXT
++	
++	// An array of (zero terminated wide character strings).
++	// The array itself also null terminated
++	unsigned char version[MAX_VERSIONID_LEN]; // send to bus driver
++	
++	unsigned long c8051_version;
++
++	unsigned long dsp_version;
++	
++	// Unique serail number of the device on the bus
++	unsigned char SerialNo; // send to bus driver
++	
++	unsigned char ResetFlag;	// Reset Flag
++	unsigned char ParaFlag;	/*from wb config.
++			bit0~bit7
++			bit0:		hotkey
++			bit12:	antenna	1: 0      2: 1        other:auto
++			*/
++	
++	// Device State
++	unsigned long devstate; //set by bus driver.
++	
++	// Callback operation
++	int (*open)(struct _TDSPBUS_INTERFACE_DATA *dev);
++	int (*close)(struct _TDSPBUS_INTERFACE_DATA *dev);
++	int (*suspend)(struct _TDSPBUS_INTERFACE_DATA *dev, unsigned int state);
++	int (*resume)(struct _TDSPBUS_INTERFACE_DATA *dev);
++	int (*notify_reset)(struct _TDSPBUS_INTERFACE_DATA *dev, int resetevent);
++	int (*notify_initreset)(struct _TDSPBUS_INTERFACE_DATA *dev, int resetevent);
++	int (*notify_deatch)(struct _TDSPBUS_INTERFACE_DATA *dev, int reason);
++	void *pUsbDev; // usb_device
++} TDSPBUS_INTERFACE, *PTDSPBUS_INTERFACE;

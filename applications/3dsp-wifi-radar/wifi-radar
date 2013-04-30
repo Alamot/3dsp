@@ -1,0 +1,3613 @@
+#!/usr/bin/python -OO
+#
+#   $Id: wifi-radar,v 1.21 2010/07/09 08:35:27 hank.wang Exp $
+#    vi:set filetype=python noet:
+#
+#	A wireless profile manager for Linux
+#
+#   Originally created for x1000 Linux:
+#	http://x1000.bitbuilder.com
+#
+#   Created by:
+#	Ahmad Baitalmal <ahmad@baitalmal.com>
+#
+#   Maintained by:
+#	Brian Elliott Finley <brian@thefinleys.com>
+#	
+#   License:
+#       GPL
+#
+#	http://www.bitbuilder.com/wifi_radar
+#	http://svn.systemimager.org
+#
+#	See AUTHORS file for more contributors.
+#	See ChangeLog file for, well, changes.
+#
+
+#Spear add the changelog section @08/11/25
+#version	change log description
+#0.0.1		maintain version ourself, display version on wifi-radar window
+#0.0.2		kill wpa_supplicant when showing connect button(driver disconnected)
+#0.0.3		add a timer to check essid, if essid is none, then kill wpa_supplicant at once
+#			instead of doing this when showing connect button(driver disconnected)
+#0.0.4		start check essid timer till set essid command is commited
+#0.0.5		set wpa driver to "wext" as defualt; modify sleep timer after start wpa supplicant
+#0.0.6		try to fix bug that "global name 'check_essid_timer' is not defined", declare it at head
+#0.0.7		add region select combo box to preference dialog,let user specify country/region
+#0.0.8		add IBSS support
+#0.0.9		1. remove USE WPA slection, use wpa as default
+#		2. rename "Wifi Options" to "Connect to BSS" or "Connect to IBSS"
+#		3. rewrite wpa config file in IBSS mode
+#		4. parse more encrypt information and overwrite wpa_supplicant config file when connecting
+#0.1.0		1. refine the UI interface in details, such as get channel number correctly
+#		2. add system tray icon on desktop
+#0.2.0		1. make wifi-radar remember the key user has been configured, thus no need to enter key again
+#		2. add wifi driver version to about dialog(get driver version according driver private interface)
+#0.2.1		1. fix bug that wifi-radar.conf may be destroied when system crash,thus wifi-radar could not start	normally next time system booted
+#0.2.2		1. add encryption expander in profile dialog when create new profile to connect encryption AP who hides it`s ssid or start IBSS using encryption(just support WEP currently).
+#		2. fix bugs caused by function added in version 0.2.0
+#0.2.3		1. do NOT reset signal level during scanning to refine user experience
+#		2. fix bugs caused in version 0.2.0(if AP changes encryption, NOT re-write wpa config file)
+#		3. restore key content to wifi-radar config file,thus key always is remebered no matter AP changes
+#0.2.4		1. add key index selection on key dialog when AP uses WEP encryption
+#0.2.5		1. fix bug that can not connect to AP use no encryption
+#		2. refine the UI of editing profile that is NOT active (has not been connected),
+#		 set protocol to g as default and show mode in main window after create new profile
+#		 as defualt and show mode after create
+#		3. fix bug that wifi-radar.conf may be destroied when system crash(version 0.2.1 does NOT take effect), thus wifi-radar could not be started
+#		4. refine wep key input dialog UI and fix some UI spelling mistake
+#		5. add feature to permit wifi-radar running only once
+#0.2.6		1. fix bug: if start 3dsp-wfifi-radar from system menu first time, there would be 2 process named 3dsp-wfifi-radar(gksudo 3dsp-wfifi-radar),so it would be reported wifi-radar is already running; in this version, we create a system fifo to indicate whether wifi-radar is running or not.
+#		2. always keep main window on top on desktop
+#		3. remove some useless UI parts:
+#		(1)Profile dialog: Domain; Connection Command;
+#		(2)Performance dialog: Scan Timeout; if up required; Commit Command;
+#		4. update channel number of BSS in profile dialog when scanning acquires AP infomation.
+#		5. do NOT re-write /etc/resolv.conf if DNS user configured is 0.0.0.0 when connecting
+#0.2.7		1. if driver is NOT loaded, set a defualt interface name,thus wifi-radar would work again if the corresponding drvier is loaded(now the default name is "twifiu0").
+#		2. if driver is NOT loaded, About dialog would NOT show driver version.	
+#0.2.8		1. fix bug caused by item 1 of version 0.2.6: it wifi radar terminated abnormally, the system fifo still exist, so using global fifo seems unwise. so use command "ps -ax|grep wifi_radar" to search if wifi radar is running or not.
+#0.2.9		1. display process bar during connecting to wireless network
+#		2. add auto-connecting capability when starting wifi-radar, the latest connected AP has the highest priority and disable changing auto profile order by drag and drop row item in wifi radar window which cause "row-changed" event continusely
+#		3. handle the situation: ordinary system user running wifi radar by typing "3dsp-wifi-radar" without sudo or gksudo in X terminal, thus, IO Error would be reported: write wifi-radar.conf, permission denied. resolution: add sudo authentication check at first, if failed, give a prompt and exit. Note: this could be refined if we required adiminastritive password and do authenctication ourself
+#		4. add another feature of system tray: click system tray to change the main window hide and show
+#		5. show notification when connecting status changed on system icon
+#0.3.0		1. remove the "-e" argument of dhclient V4 used on FC10,otherwise running dhclient would failed
+#0.3.1		1. fix bug that set domain in preferences dialog, but not store it to config file at once
+#0.3.2		1. update to support fedora
+#		2. modify "find_process_by_name"
+#		3. remove a 'return' by hank, 20091224
+#0.3.3		1. break DHCP if can not get SSID
+#0.3.4		1. timer of scan is not 2sec, but can be changed according to state.
+#0.3.5		1. if ip is None, call connect_to_network, and reset ip only.
+#		2. if password is error, wpa_supplicant would connect, then disconnect again and again, wifi_radar will detect the matter, and kill wpa_supplicant
+#		3. if essid is none, not kill existed wpa_supplicant, because it would reconnect. 
+#		4. change 'check_essid_handler' to a function call but a timer call
+#0.3.6		1. make check_window larger in Func check_essid_handler()
+#		2. add check_none_times, if current_ssid is none for 20 seconds, kill wpa_supplicant
+#0.3.7		1. Do not show AP who's signal strenth is 0 except having a profile.	20100629
+#		2. if the ssid has not profile when calling connect_profile, 
+#		   the ssid is changed to unconfigured ssid after suspend.
+#		   the reason is that access_points is not updated in connect_profile
+#		3. Update domain setting at once when the wireless device is found.
+#		4. if wifi-radar is started before the device is plugged in, 
+#		   then plug in the device, wifi-radar would not detect the action. 
+#		   Detect the device automatitic in scanning_thread	20100630
+#		5. if a AP is set to "not broadcast ssid", then wifi-radar not show it, but a new profile with the ssid can not be created because access_points still include it.
+
+import time, os, signal, sys, re, ConfigParser, threading, socket, thread
+#Spear add the line below @version 0.2.9 to show notification
+import pynotify
+#Spear add end
+
+WIFI_RADAR_VERSION = "0.3.7"
+
+if __debug__:
+	print '__debug__ is True'
+	# NOTE: Remove the '-OO' from '#!/usr/bin/python -OO' in the first line to 
+	#       turn on debugging.
+
+####################################################################################################
+#Spear add the line below in version 0.0.6
+
+# Defaults, these may get overridden by values found in the conf file.
+
+# The network interface you use.
+# Specify "auto_detect" as the interface to make wifi-radar automatically detect your wireless card.
+INTERFACE		= "auto_detect"
+DEFALUT_INTERFACE = "twifi0"
+
+# How long should the scan for access points last?
+SCAN_TIMEOUT	= "5"
+#Spear add the line below @version 0.0.7
+DEFAULT_REGION = "US"
+
+# Should I speak up when connecting to a network? (If you have a speach command)
+SPEAK_UP		= False
+
+# You may set this to true for cards that require a "commit" command with iwconfig
+COMMIT_REQUIRED	= False
+
+# You may set this to true for cards that require the interface to be brought up first
+IFUP_REQUIRED	= False
+
+#
+# Where the conf file should live could be different for your distro.  Please change
+# at install time with "make install sysconfdir=/etc/wifi-radar" or similar. -BEF-
+#
+CONF_FILE		 = "/etc/wifi-radar/wifi-radar.conf"
+
+
+IWLIST_COMMAND	 = "iwlist"
+IWCONFIG_COMMAND = "iwconfig"
+IWPRIV_COMMAND   = "iwpriv"
+IFCONFIG_COMMAND = "ifconfig"
+ROUTE_COMMAND	 = "route"
+
+os.environ['LC_MESSAGES'] = 'C'
+
+# X1000 Linux has a say command (text to speach) to accounce connecting to networks.
+# Set the SPEAK_UP to false if you do not have or want this.
+SAY_COMMAND		= "say"
+
+def which( command ):
+    for i in os.environ["PATH"].split(":"):
+        FILE = "%s/%s" % ( i, command )
+        if os.path.isfile( FILE ):
+            return FILE
+
+#
+# List of supported DHCP clients in order of preference
+#
+POSSIBLE_DHCP_CLIENTS = "dhcpcd dhclient3 dhclient pump"
+DHCP_TIMEOUT	= 30
+HOSTNAME = socket.gethostname()
+
+#Spear add the lines below @version 0.0.1
+WIFI_RADAR_HELP_COMMAND = "/usr/bin/yelp"
+WIFI_RADAR_HELP_FILE = "/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.html"
+
+# WPA_SUPPLICANT
+WPA_SUPPLICANT_COMMAND	= "/sbin/wpa_supplicant"
+WPA_SUPPLICANT_KILL_COMMAND=""
+WPA_SUPPLICANT_CONF="/etc/wpa_supplicant/wpa_supplicant.conf"
+WPA_DRIVER="ipw"
+WPA_SUPPLICANT_PIDFILE	= "/var/run/wpa_supplicant.pid" 
+
+#####################################
+# Labels
+USE_DHCP_LABEL	= "Automatic network configuration (DHCP)"
+USE_IP_LABEL	= "Manual network configuration"
+WIFI_SET_BSS	= "Connect to BSS"
+WIFI_SET_IBSS		= "Connect to IBSS"
+POSTPRE_LABEL	= "Connection Commands"
+WIFI_MODES		= ['Master', 'Ad-Hoc' ]
+#Spear mask the line off and add new ones @version 0.2.2
+#WIFI_SECURITY	= [ '', 'open', 'restricted' ]
+WIFI_SECURITY	= [ 'WEP', 'WPA-PSK', 'WPA2-PSK' ]
+WIFI_ENCRYPTION	= [ 'TKIP', 'CCMP' ]
+#Spear add end
+WIFI_CHANNELS	= [ '', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14' ]
+#Spear add the line below @version 0.0.7
+WIFI_REGIONS	= [ 'US', 'Europe', 'Japan', 'RestofWorld' ]
+####################################################################################################
+
+####################################################################################################
+####################################################################################################
+
+AUTO_DETECT = False
+# Sets the global INTERFACE to the specified network device
+def set_network_device(device):
+	global INTERFACE, AUTO_DETECT
+	if device != "auto_detect":
+		INTERFACE = device
+		AUTO_DETECT = False
+	else: # auto detect network device	
+		# Get a list of 802.11 enabled devices by parsing the output of iwconfig.
+		# If no devices are found, default to eth1.
+		iwconfig_info = os.popen( IWCONFIG_COMMAND + " 2>&1", 'r' )
+		wireless_devices = [ (x[0:x.find(" ")]) for x in iwconfig_info if("802.11" in x)]
+		if __debug__:
+			print "!!!!!wireless devices: ", wireless_devices
+		#Spear modify the line below @version 0.2.6
+		if wireless_devices != []:
+			if len(wireless_devices) >= 0 :
+				INTERFACE = wireless_devices[0]
+			else:
+				#Spear modify the line below @version 0.2.7
+				#INTERFACE = "eth1"
+				INTERFACE = "auto_detect"
+		else:
+			#Spear modify the line below @version 0.2.7
+			#INTERFACE = "eth1"
+			INTERFACE = "auto_detect"
+		AUTO_DETECT = True
+
+# Configure dhcp client commands
+# Returns a 4-tuple of strings: (DHCP_COMMAND, DHCP_PIDFILE, DHCP_ARGS, DHCP_KILL_COMMAND)
+def configure_dhcp_client():
+	global POSSIBLE_DHCP_CLIENTS, DHCP_TIMEOUT, HOSTNAME
+	global INTERFACE
+
+	for i in POSSIBLE_DHCP_CLIENTS.split():
+		DHCP_COMMAND = which( i )
+		if DHCP_COMMAND:
+	
+			if i == "dhcpcd":
+			    DHCP_PIDFILE        = "/var/run/dhcpcd-%s.pid" % INTERFACE
+				#
+			    # See "man dhcpcd-bin" or "man dhcpcd" for additional options.
+				#
+			    # Additional options can be set in the dhcpcd config file, which
+				# often lives here: "/etc/dhcpc/config".
+				#
+			    DHCP_ARGS           = "-h %s -t %s" % (HOSTNAME, DHCP_TIMEOUT)
+			    DHCP_KILL_COMMAND   = DHCP_COMMAND + " -k " + INTERFACE
+			    break
+			
+			elif (i == "dhclient") or (i == "dhclient3"):
+			    #
+			    # dhclient v2 or v3?
+			    #
+				#f = os.popen( scan_command, "r" )
+				cmd = i + ' --version 2>&1'
+				if __debug__:
+					print "%s" % cmd
+				f = os.popen( cmd , 'r' )
+				s = f.read()
+				f.close()
+				if re.search('-V3\.', s):
+					#
+					# dhclient v3
+					#
+					# Usage: dhclient [-1dqr] [-nw] [-p <port>] [-s server]
+					#	 [-cf config-file] [-lf lease-file][-pf pid-file] [-e VAR=val]
+					# 	[-sf script-file] [interface]
+					#
+					DHCP_PIDFILE        = "/var/run/dhclient.%s.pid" % INTERFACE
+					DHCP_ARGS           = "-1 -pf " + DHCP_PIDFILE + " -lf /var/run/dhclient.%s.leases" % INTERFACE
+					DHCP_KILL_COMMAND   = DHCP_COMMAND + " -r " + DHCP_ARGS
+					if __debug__:
+						print 'Using dhclient v3 syntax'
+				else:
+					#
+					# dhclient v2
+					#
+					# Usage: dhclient [-c] [-d] [-e] [-p <port>] [-lf lease-file]
+					#   [-pf pidfile] [interface]
+					#
+					# Example:  dhclient -e -pf /var/run/dhclient.eth1.pid -lf /var/run/dhclient.eth1.leases eth1
+					#
+					DHCP_PIDFILE        = "/var/run/dhclient.%s.pid" % INTERFACE
+					#Spear removed the "-e" argument of dhclient for this path is used by dhclient V4, the ugly thing
+					#is Fedora Core 10 uses dhclient V4, but the result of "dhclient --version" is: "isc-dhclient-4.0.0",
+					#not isc-dhclient-V4.0.0", and dhclient do NOT allow the "-e" argument @version 0.3.0
+					#DHCP_ARGS           = "-e -pf " + DHCP_PIDFILE + " -lf /var/run/dhclient.%s.leases" % INTERFACE
+					DHCP_ARGS           = "-pf " + DHCP_PIDFILE + " -lf /var/run/dhclient.%s.leases" % INTERFACE
+					# There is no dhcp kill command for dhclient v2.  Let the "disconnect_interface" function handle it via pid.
+					DHCP_KILL_COMMAND   = ""
+					if __debug__:
+						print 'Using dhclient v2 syntax'
+				break
+
+			elif i == "pump":
+			    DHCP_PIDFILE        = "" # no pid file for pump
+			    DHCP_ARGS           = "-i"
+			    DHCP_KILL_COMMAND   = DHCP_COMMAND + " -r " + DHCP_ARGS + " " + INTERFACE
+			    break
+	return (DHCP_COMMAND, DHCP_PIDFILE, DHCP_ARGS, DHCP_KILL_COMMAND)
+
+def dhcp_thread( lock = None ):
+	global exit_flag
+	global dhcp_flag
+	global current_ssid
+	global WIFI_CHANNELS
+	global DEFAULT_REGION
+
+	while True and (not exit_flag):
+		if dhcp_flag:
+			dhcp_options = list()
+			dhcp_options.append(DHCP_COMMAND)
+			dhcp_options.extend(DHCP_ARGS.split())
+			dhcp_options.append(INTERFACE)
+			if __debug__:
+				print "DHCP args: %s" % ( dhcp_options, )
+
+	#		if None != lock: lock.acquire()
+
+			dhcp_pid = os.spawnvp(os.P_NOWAIT,DHCP_COMMAND, dhcp_options)
+			timer = DHCP_TIMEOUT
+			tick = 0.5
+			get_ssid_times = 0
+			while os.waitpid(dhcp_pid,os.WNOHANG) == (0,0):
+				if timer < 0 or exit_flag:
+					os.kill( dhcp_pid, signal.SIGTERM)
+					break
+
+				if (timer % 3) == 0:
+					cc_ssid = get_current_ssid()
+					if __debug__:
+						print timer, "current SSID ", cc_ssid, get_ssid_times
+					if cc_ssid != 'None':
+						get_ssid_times = 0
+					else:
+						get_ssid_times += 1
+					if get_ssid_times > 2:
+						if __debug__:
+							print "FAIL, not find SSID, times = ", get_ssid_times
+						break
+				timer -= tick
+				time.sleep(tick)
+			dhcp_flag = False
+		else:
+			time.sleep(0.3)
+	if __debug__:
+		print "exit dhcp_thread"
+	return
+
+
+
+# Scan for a limited time, return ap names found
+def scanning_thread( lock = None ):
+	global access_points
+#	global main_radar_window
+	global exit_flag
+	global current_ip
+	global current_ssid
+	#Spear add the line below @version 0.2.9
+	global WIFI_CHANNELS
+	global DEFAULT_REGION
+	global INTERFACE, AUTO_DETECT
+
+	# Setup our essid pattern matcher
+	essid_pattern		= re.compile( "ESSID\s*(:|=)\s*\"([^\"]+)\"", re.I | re.M  | re.S )
+	protocol_pattern	= re.compile( "Protocol\s*(:|=)\s*IEEE 802.11\s*([abg]+)", re.I | re.M  | re.S )
+	mode_pattern		= re.compile( "Mode\s*(:|=)\s*([^\n]+)", re.I | re.M  | re.S )
+	enckey_pattern		= re.compile( "Encryption key\s*(:|=)\s*(on|off)", re.I | re.M  | re.S )
+	#Spear add the lines below @version 0.0.9
+	channel_pattern = re.compile( "Frequency\s*(:|=)(\d.\d*)", re.I | re.M  | re.S )
+	WEP_pattern		= re.compile( "IE\s*(:|=)\s*", re.I | re.M  | re.S )
+	RSN_pattern		= re.compile( "IE\s*(:|=)\s*IEEE 802.11i/WPA2\s*", re.I | re.M  | re.S )
+	WPA_pattern		= re.compile( "IE\s*(:|=)\s*WPA Version 1\s*", re.I | re.M  | re.S )
+	auth_suit_pattern = re.compile( "\sAuthentication Suites \(\d\)\s*(:|=) (PSK|802.1x)", re.I | re.M  | re.S )
+	group_cipher_pattern = re.compile( "\sGroup Cipher\s*(:|=) (TKIP|CCMP)", re.I | re.M  | re.S )
+	pairwise_cipher_pattern = re.compile( "\sPairwise Ciphers \(\d\)\s*(:|=) (TKIP|CCMP)", re.I | re.M  | re.S )
+	#SPear add end
+	signal_pattern		= re.compile( "Signal level\s*(:|=)\s*-?([0-9]+)", re.I | re.M  | re.S )
+	# Access points we find will be added to the access_points dictionary
+	# Some cards neet to have the interface up to scan
+	if IFUP_REQUIRED:
+		os.spawnlp( os.P_WAIT, 'ifconfig', IFCONFIG_COMMAND, INTERFACE, "up" )
+	trial = 0	
+	
+	update_domain( DEFAULT_REGION )	
+
+	first_scan = 0
+	sleep_timer = 0
+	while True:
+		# we may not be running in a thread
+		if None != lock: lock.acquire()
+
+		else:
+		   	trial = trial + 1
+		   	if trial > int( SCAN_TIMEOUT ):
+		   		print "return for: trial > int( SCAN_TIMEOUT )"
+		   		return
+
+		if exit_flag:
+			if __debug__:
+				print "Ending scan"
+			if None != lock: lock.release()
+			return
+
+		if __debug__:
+			print ".",
+
+		#to detect the device automatitic	20100630
+		interface = INTERFACE
+		if AUTO_DETECT == True:
+			set_network_device("auto_detect")
+		if INTERFACE == "auto_detect" and interface == "auto_detect":
+			if None != lock: lock.release()
+			time.sleep( 5 )
+			continue
+		if interface != INTERFACE:
+			first_scan = 0
+			if interface == "auto_detect":
+				update_domain( DEFAULT_REGION )			
+			
+
+		# get the current ip
+		curr_ip = get_current_ip()
+		if curr_ip:
+			current_ip		= curr_ip
+		else:
+			current_ip		= 'None'
+
+		# get the current ssid
+		curr_ssid = get_current_ssid()
+#		if __debug__:
+#			print "Got current is ", curr_ssid, curr_ip, sleep_timer, first_scan
+		if curr_ssid:
+			if curr_ssid != current_ssid:
+				first_scan = 0
+			current_ssid	= curr_ssid
+			if (not curr_ip) and (not dhcp_not_get_ip) and (not connecting_to_network):
+				for apname in confFile.sections():
+					ssid = '"' + apname + '"'
+					if current_ssid.find(ssid) == 0:
+						profile = get_profile_from_conf_file( apname )
+						if None != lock: lock.release()
+						connect_to_network( apname, profile['key_content'], profile['key_id'], None )
+						if None != lock: lock.acquire()
+						if __debug__:
+							print "no ip, call connect_to_network"
+						break
+
+		else:
+			if curr_ssid != current_ssid:
+				if current_ssid != '':
+					first_scan = 0
+			current_ssid	= ''
+
+		check_essid_handler()
+
+		if sleep_timer > 0:
+			if first_scan > 0:
+				sleep_timer = sleep_timer - 1
+#				if __debug__:
+#					print sleep_timer, current_ssid, curr_ssid
+				if None != lock: lock.release()
+				time.sleep( 2 )
+				continue
+
+		#Spear add the lines below @version 0.2.5
+		#now = time.strftime('%H:%M:%S')
+		#print "scan timestamp: ", now
+
+		# update the signal strengths
+		scan_command = "%s %s scan" % ( IWLIST_COMMAND, INTERFACE )
+		if __debug__:
+			print scan_command
+		f = os.popen( scan_command, "r" )
+		scandata = f.read()
+		f.close()
+
+		for ap in access_points:
+			access_points[ ap ]['signal'] = '0'
+		
+		# split the scan data based on the address
+		hits = scandata.split( '- Address:' )
+		for hit in hits:
+			foundvalues = False
+			apname		= ''
+			protocol	= 'b'
+			mode		= ''
+			encrypted	= 'off'
+			
+			#Spear add the lines below @version 0.0.9
+			wep_enabled		= False
+			auth_version	= ''
+			auth_type			= ''
+			group_cipher	= ''
+			pairwise_cipher	= ''			
+			#Spear add end
+			
+			signal		= '0'
+			channel		= 0
+			m = essid_pattern.search( hit )
+			if m:
+				# we found an ssid
+				foundvalues = True
+				apname = m.groups()[1]
+				m = protocol_pattern.search( hit )
+				if m:
+					protocol = m.groups()[1]
+				m = mode_pattern.search( hit )
+				if m:
+					mode = m.groups()[1]
+				m = enckey_pattern.search( hit )
+				if m:
+					encrypted = m.groups()[1]
+					
+				#Spear add the lines below @version 0.0.9
+				m = channel_pattern.search ( hit )
+				if m:
+					freq = m.groups()[1]
+					if freq == '2.412':
+						channel = '1'
+					elif freq == '2.417':
+						channel = '2'
+					elif freq == '2.422':
+						channel = '3'
+					elif freq == '2.427':
+						channel = '4'
+					elif freq == '2.432':
+						channel = '5'
+					elif freq == '2.437':
+						channel = '6'
+					elif freq == '2.442':
+						channel = '7'
+					elif freq == '2.447':
+						channel = '8'
+					elif freq == '2.452':
+						channel = '9'
+					elif freq == '2.457':
+						channel = '10'
+					elif freq == '2.462':
+						channel = '11'
+					elif freq == '2.467':
+						channel = '12'
+					elif freq == '2.472':
+						channel = '13'
+					elif freq == '2.484':
+						channel = '14'
+
+				if encrypted == 'on':
+					m = WEP_pattern.search( hit )
+					if m:
+						wep_enabled = False
+						m = RSN_pattern.search( hit )
+						if m:
+							auth_version = 'RSN'
+						else:
+							m = WPA_pattern.search( hit )
+							if m:
+								auth_version = 'WPA'
+							if auth_version != 'RSN' and auth_version != 'WPA':
+								auth_version = ''
+						
+						m = auth_suit_pattern.search( hit )
+						if m:
+							auth_type = m.groups()[1]
+		
+						m = group_cipher_pattern.search( hit )
+						if m:
+							group_cipher = m.groups()[1]
+				
+						m = pairwise_cipher_pattern.search( hit )
+						if m:
+							pairwise_cipher = m.groups()[1]
+						
+						if False:
+							print "*** %s ***" %apname
+							print "auth_version", auth_version
+							print "auth_suite", auth_type
+							print "group_cipher", group_cipher
+							print "pairwise_cipher", pairwise_cipher
+					else:
+						wep_enabled = True
+						if False:
+							print "using WEP"
+				#Spear add end
+				
+				m = signal_pattern.search( hit )
+				if m:
+					signal = m.groups()[1]
+				
+				# Set the values we found
+				if access_points.has_key( apname ):
+					# We know this ssid, make it available
+					access_points[ apname ]['available'] = True
+				else:
+					# Add it to the available networks
+					ap = {}
+					ap['known']		= False
+					ap['available']	= True
+					access_points[ apname ] = ap
+
+				access_points[ apname ]['protocol']	= protocol
+				access_points[ apname ]['mode']		= mode
+				access_points[ apname ]['encrypted']= ( encrypted == 'on' )
+				#Spear add the lines below @version 0.0.9
+				access_points[ apname ]['channel'] = channel
+				if wep_enabled:
+					access_points[ apname ]['wep_enabled'] = True
+				else:
+					access_points[ apname ]['wep_enabled'] = False
+					access_points[ apname ]['auth_suite'] = auth_type
+					access_points[ apname ]['auth_version'] = auth_version
+					access_points[ apname ]['group_cipher'] = group_cipher
+					access_points[ apname ]['pairwise_cipher'] = pairwise_cipher
+				#Spear add end
+				access_points[ apname ]['signal'] 	= signal
+
+#		if INTERFACE.find('ath') == 0:curr_ssid == current_ssid
+#			sleep_timer = 30
+#		else:
+		if current_ssid == '' or current_ssid == 'None':	#current_ssid.find('None') == 0:
+			if first_scan == 0:
+				sleep_timer = 1
+				first_scan = first_scan + 1
+			else:
+				sleep_timer = 2
+		else:
+			if first_scan == 0:
+				sleep_timer = 1
+				first_scan = first_scan + 1
+			else:
+				first_scan = first_scan + 1
+				sleep_timer = 15
+
+		if None != lock: lock.release()
+		time.sleep( 0.5 )
+	return
+
+def check_essid_handler():
+	global current_ssid
+	global check_times
+	global check_window
+	global check_value
+	global check_none_times
+
+	check_result = False
+
+	if __debug__:
+		print "check essid handler: ", current_ssid, check_value, check_window, check_times, "none_times=", check_none_times
+	if current_ssid == 'None':
+		if check_times > 0:
+			if check_times > 10:
+				check_value = 0
+				check_window = 1;
+			else:
+				check_value = check_value + 1
+		check_times = 0
+		if check_none_times > 0:
+			check_none_times = check_none_times + 1
+	else:
+		check_none_times = 1
+		if check_times == 0:
+			check_value = check_value + 1
+		check_times = check_times + 1
+			
+	check_window = check_window + 1
+	if check_window > 39:
+		check_times = 0
+		check_value = 0
+		check_window = 0
+
+	if check_value > 5:
+		check_result = True
+		check_times = 0
+		check_value = 0
+		check_window = 0
+
+	if check_none_times > 10:
+		check_result = True
+		check_none_times = 0
+
+	# Kill off any existing WPA_SUPPLICANT clients running when disconnected
+	if check_result:	#add by hank, not kill wpa because wpa would reconnect ap
+		if os.access( WPA_SUPPLICANT_PIDFILE, os.R_OK):
+			if __debug__:
+				print "Killing existing WPA_SUPPLICANT for driver disconnected..."
+			try:
+				if not WPA_SUPPLICANT_KILL_COMMAND == '':
+					os.spawnlp( os.P_WAIT, WPA_SUPPLICANT_KILL_COMMAND, WPA_SUPPLICANT_KILL_COMMAND )
+				os.kill( int(open(WPA_SUPPLICANT_PIDFILE, mode='r').readline()), signal.SIGTERM )
+			except OSError:
+				print "Stale pid file.  Removing"
+				os.remove( WPA_SUPPLICANT_PIDFILE )
+			if os.path.isfile( WPA_SUPPLICANT_PIDFILE ):
+				print "Stale pid file.  Removing"
+				os.remove( WPA_SUPPLICANT_PIDFILE )
+
+# Connects to the first matching network
+def connect_to_preferred():
+	global access_points
+	global auto_profile_order
+	global current_ssid
+	global current_ip
+	global lock
+	global dhcp_not_get_ip
+
+	#Spear add the line below @version 0.2.9
+	if None == lock: lock = threading.RLock()
+
+	if current_ip.find('None') == 0:
+		if current_ssid.find('None') == 0:
+			found_one = False
+			for ssid in auto_profile_order:
+#				print ssid, "in auto_profile_order"
+				ssid = ssid.strip()
+				if 	access_points.has_key( ssid )	\
+					and	access_points[ ssid ]['known'] \
+					and access_points[ ssid ]['available']:
+					found_one = True
+			
+					#Spear add the lines below @version 0.2.9
+					#get ap infomation from profile
+					profile = get_profile_from_conf_file( ssid )
+					#Spear add end
+		
+					if __debug__:
+						print "connect to preferred ssid: ", ssid
+						print "key_content: ", profile['key_content']
+						print "key_id: ", profile['key_id']
+					if not dhcp_not_get_ip:
+						connect_to_network( ssid, profile['key_content'], profile['key_id'], None )
+					break
+
+			if not found_one:
+				say( "No preferred network found" )
+				if __debug__:
+					print "   No preferred network found"
+					print access_points
+		else:
+			for apname in confFile.sections():
+				ssid = '"' + apname + '"'
+				if current_ssid.find(ssid) == 0:
+					profile = get_profile_from_conf_file( apname )
+					if not dhcp_not_get_ip:
+						connect_to_network( apname, profile['key_content'], profile['key_id'], None )
+					break
+
+
+def get_current_ip():
+	"""Returns the current IP if any by calling ifconfig"""
+	ifconfig_info = os.popen( IFCONFIG_COMMAND + " " + INTERFACE, 'r' )
+	# Be careful to the language (inet adr: in French for example)
+	#
+    # Hi Brian
+    # 
+    # I'm using wifi-radar on a system with German translations (de_CH-UTF-8).
+    # There the string in ifconfig is inet Adresse for the IP which isn't
+    # found by the current get_current_ip function in wifi-radar. I changed
+    # the according line (#289; gentoo, v1.9.6-r1) to
+    # >ip_re = re.compile(r'inet [Aa]d?dr[^.]*:([^.]*\.[^.]*\.[^.]*\.[0-9]*)')
+    # which works on my system (LC_ALL=de_CH.UTF-8) and still works with LC_ALL=C.
+    # 
+    # I'd be happy if you could incorporate this small change because as now
+    # I've got to change the file every time it is updated.
+    # 
+    # Best wishes
+    # 
+    # Simon
+	ip_re = re.compile(r'inet [Aa]d?dr[^.]*:([^.]*\.[^.]*\.[^.]*\.[0-9]*)')
+	for line in ifconfig_info:
+		if ip_re.search( line ):
+			return ip_re.search( line ).group(1)
+	return False
+
+def get_current_ssid():
+	"""Returns the current SSID if any by calling iwconfig"""
+	ifconfig_info = os.popen( IWCONFIG_COMMAND + " " + INTERFACE, 'r' )
+	
+	# Be careful to the language (inet adr: in French for example)
+	#Spear modify the line below @version 0.2.7 or USB driver return ESSID:off/any
+	#other than ESSID:"" when disconncet
+	essid_re = re.compile(r'ESSID\s*(:|=)\s*"([^"]*)"')
+	essid_re = re.compile(r'ESSID\s*(:|=)(\s*"([^"]*)"|off/any)')
+	for line in ifconfig_info:
+		if essid_re.search( line ):
+			#print "get match pattern ssid!!!"
+			res = essid_re.search( line ).group(2)
+			if res == '' or res == 'off/any' or res == '\"\"':
+				return 'None'
+			else:
+				return res
+
+	iwconfig_info = os.popen( IWCONFIG_COMMAND + " 2>&1", 'r' )
+	wireless_devices = [ (x[0:x.find(" ")]) for x in iwconfig_info if("802.11" in x)]
+	if wireless_devices != []:
+		return 'None'
+
+	if __debug__:				
+		print "get_current_ssid: not find ssid !!!"
+	return False
+
+#Spear add the lines below @version 0.0.9 to set wpa_supplicant.conf
+def set_config_to_wpa_conf_file(essid, key, key_id):
+	global access_points
+	profile = get_profile_from_conf_file( essid )
+	if not profile:
+		if __debug__:
+			print "Unknown SSID"
+		say( "Unknown SSID" )
+		return
+
+	s2 = ""
+	s3 = "\n}\n"
+
+	if profile['mode'] == 'Ad-Hoc':
+		s1 = "ctrl_interface=/var/run/wpa_supplicant\nctrl_interface_group=0\nap_scan=2\n\nnetwork={\n\tssid=" + "\""+essid + "\"\n\t"
+		
+		mode = "mode=1" + "\n\t"
+		key_mgmt = "key_mgmt=NONE" + "\n\t"
+		auth_alg = "auth_alg=OPEN" + "\n\t"
+
+		if (access_points[ essid ]['encrypted'] == True):
+			#use encryption
+			if (access_points[ essid ]['wep_enabled'] == True):
+				#if use WEP encryption
+				#Spear add the 2 linew below @version 0.2.4
+				key_seq = "wep_key" + key_id + "="
+				key_tx_idx = "wep_tx_keyidx=" + key_id
+
+				key_len = len(key)
+				if key_len == 5 or key_len == 13:
+					s2 = mode + key_mgmt + auth_alg + key_seq + "\"" + key + "\"" + "\n\t" + key_tx_idx
+				elif key_len == 10 or key_len == 26:
+					s2 = mode + key_mgmt + auth_alg + key_seq + key + "\n\t" + key_tx_idx
+		else:
+			#no encryption
+			s2 = mode+key_mgmt+auth_alg
+	else:		#BSS section
+		s1 = "ctrl_interface=/var/run/wpa_supplicant\nctrl_interface_group=0\n\nnetwork={\n\tssid=" + "\""+essid + "\"\n\t"
+		
+		if False:
+			print "@@@enc used is ",  access_points[ essid ]['encrypted']
+			print "@@@wep used is ",  access_points[ essid ]['wep_enabled']
+			print "@@@auty suite is",  access_points[ essid ]['auth_suite']
+			print "@@@auty version is",  access_points[ essid ]['auth_version']
+			print "@@@grp cipher is",    access_points[ essid ]['group_cipher']
+			print "@@@pairwise suite is", access_points[ essid ]['pairwise_cipher']
+			print "@@@enc used is ",  access_points[ essid ]['encrypted']
+			print "@@@wep used is ",  access_points[ essid ]['wep_enabled']
+
+		if (access_points[ essid ]['encrypted'] == True):
+			if (access_points[ essid ]['wep_enabled'] == True):
+				#if use WEP encryption
+				#Spear add the 2 linew below @version 0.2.4
+				key_seq = "wep_key" + key_id + "="
+				key_tx_idx = "wep_tx_keyidx=" + key_id
+				
+				key_len = len(key)
+				if key_len == 5 or key_len == 13:
+					s2 = "key_mgmt=NONE" + "\n\t" + "auth_alg=OPEN" + "\n\t" + key_seq + "\"" + key + "\"" + "\n\t" + key_tx_idx
+				elif key_len == 10 or key_len == 26:
+					s2 = "key_mgmt=NONE" + "\n\t" + "auth_alg=OPEN" + "\n\t" + key_seq + key + "\n\t" + key_tx_idx
+			else:
+				#WPA/RSN PSK/EAP TKIP/CCMP Pairwise/Group	
+				if(access_points[ essid ]['auth_suite'] == 'PSK'):
+					kmgmt = 'WPA-PSK'
+				elif (access_points[ essid ]['auth_suite'] == '802.1x'):
+					kmgmt = 'WPA-EAP'
+			
+				key_mgmt = "key_mgmt=" + kmgmt + "\n\t"
+				proto = "proto=" + access_points[ essid ]['auth_version'] + "\n\t"
+				pairwise = "pairwise=" + access_points[ essid ]['pairwise_cipher'] + "\n\t"
+				group = "group=" + access_points[ essid ]['group_cipher'] + "\n\t"
+				psk = "psk=" + "\"" + key + "\"" + "\n"
+				s2 = key_mgmt + proto + pairwise + group + psk
+		else:
+			#no encryption
+			s2 = "key_mgmt=NONE" + "\n\t" + "auth_alg=OPEN" + "\n"
+
+	print " ", s2
+	s=s1+s2+s3
+	f=open( WPA_SUPPLICANT_CONF, 'w')
+	f.write(s)
+	f.close()
+
+#Spear add the function below @version 0.2.9 to show process bar when connecting
+def pulse_process_bar():
+	if sys.modules.has_key("gtk"):
+		while gtk.events_pending():
+			gtk.main_iteration(False)
+	time.sleep(1)
+#Spear add end
+
+def connect_to_network( essid, key, key_id, status_win ):
+	#Spear add the line below @08/11/27
+	global current_ssid
+	global current_ip
+	global lock
+	global connecting_to_network
+	global dhcp_not_get_ip
+	global exit_flag
+	global dhcp_flag
+
+	if connecting_to_network: return
+
+	connecting_to_network = True;
+	msg = "Connecting to %s..." % essid
+	say( msg )
+	if __debug__:
+		print "   %s" % msg
+	profile = get_profile_from_conf_file( essid )
+	if not profile:
+		if __debug__:
+			print "Unknown SSID"
+		say( "Unknown SSID" )
+		connecting_to_network = False
+		return
+		
+	#Spear add the lines below @version 0.0.9 to set wpa_supplicant.conf
+	set_config_to_wpa_conf_file(essid, key, key_id)
+	time.sleep(2)
+	
+	#Spear add the lines below @version 0.2.9
+	if status_win:
+		status_win.update_message(msg)
+		pulse_process_bar()
+
+	# ready to dance
+	# Let's run the prescript
+	prescript = profile['prescript']
+	if prescript.strip() != '':
+		# got something to execute
+		if __debug__:
+			print "executing prescript:", prescript
+		os.system( prescript )
+	# Some cards neet to have the interface up
+	if IFUP_REQUIRED:
+		os.spawnlp( os.P_WAIT, 'ifconfig', IFCONFIG_COMMAND, INTERFACE, "up" )
+	iwconfig_args = [ INTERFACE ]
+
+	if status_win:
+		pulse_process_bar()
+
+	#Spear:set mode just for setting channel(channel only could be set in IBSS mode) @version 0.0.8
+	# Now, the mode
+	mode	= profile['mode']
+	if mode == 'Ad-Hoc':
+		#if __debug__:
+		print "Setting mode ", mode
+		os.spawnlp( os.P_WAIT, 'iwconfig', IWCONFIG_COMMAND, INTERFACE, 'mode', mode )
+
+		#Spear: only set channel in IBSS
+		#Spear: need to set channel earlier before start wpa_supplicant @version 0.0.8
+		channel	= profile['channel']
+		if channel != '':
+			#if __debug__:
+			print "Setting channel ", channel
+			os.spawnlp( os.P_WAIT, 'iwconfig', IWCONFIG_COMMAND, INTERFACE, 'channel', channel )
+
+	if status_win:
+		pulse_process_bar()
+
+	if current_ssid.find('None') == 0:
+		#Spear: start wpa_supplicant
+		if os.access( WPA_SUPPLICANT_PIDFILE, os.R_OK):
+			if __debug__:
+				print "Killing existing WPA_SUPPLICANT..."
+			try:
+				if not WPA_SUPPLICANT_KILL_COMMAND == '':
+					os.spawnlp( os.P_WAIT, WPA_SUPPLICANT_KILL_COMMAND, WPA_SUPPLICANT_KILL_COMMAND )
+				os.kill( int(open(WPA_SUPPLICANT_PIDFILE, mode='r').readline()), signal.SIGTERM )
+			except OSError:
+				print "Stale pid file.  Removing"
+				os.remove( WPA_SUPPLICANT_PIDFILE )
+			if os.path.isfile( WPA_SUPPLICANT_PIDFILE ):
+				print "Stale pid file.  Removing"
+				os.remove( WPA_SUPPLICANT_PIDFILE )
+		use_wpa = profile['use_wpa']
+		if use_wpa :
+			wpa_options = list()
+			wpa_options.append( WPA_SUPPLICANT_COMMAND )
+			wpa_args = "-B -i " + INTERFACE + " -c " + WPA_SUPPLICANT_CONF + " -D " + profile['wpa_driver'] + " -P " + WPA_SUPPLICANT_PIDFILE
+			wpa_options.extend( wpa_args.split() )
+			wpa_options.append( INTERFACE )
+			if __debug__:
+				print "WPA args: %s" % ( wpa_options, )
+
+			#Spear mask the two lines below @version 0.2.9
+			#if status_win:
+				#status_win.update_message("wpa supplicant")
+			#Spear mask end
+
+			if __debug__:		
+				print "starting wpa_supplicant..."
+			wpa_pid = os.spawnvp(os.P_NOWAIT,WPA_SUPPLICANT_COMMAND, wpa_options)
+
+			if status_win:
+				pulse_process_bar()
+			#Spear add the line below @08/11/20 to wait wpa_supplicant has been set auth type
+			time.sleep(3)
+
+		# Let's start with the ssid
+		if __debug__:
+			print "Setting essid ", essid
+		iwconfig_args.append( 'essid' )
+		iwconfig_args.append( '"%s"' % essid )
+		iwconfig_args.append( 'nick' )
+		iwconfig_args.append( '"%s"' % essid )
+		#os.spawnlp( os.P_WAIT, 'iwconfig', IWCONFIG_COMMAND, INTERFACE, 'essid', "%s" % essid )
+
+		# Some cards require a commit
+		if COMMIT_REQUIRED:
+			if __debug__:
+				print "Setting commit "
+			#os.spawnlp( os.P_WAIT, 'iwconfig', IWCONFIG_COMMAND, INTERFACE, 'commit' )
+			iwconfig_args.append( 'commit' )
+		if __debug__:
+			print "iwconfig_args %s " % ( iwconfig_args, )
+		iwconfig_command = IWCONFIG_COMMAND + ' ' + ' '.join( iwconfig_args )
+
+		#os.spawnvp( os.P_WAIT, 'iwconfig', iwconfig_args )
+		if __debug__:
+			print "iwconfig_command ", iwconfig_command
+		os.system( iwconfig_command )
+
+		if status_win:
+			pulse_process_bar()
+
+		#Spear add the lines below @08/11/27
+		#Spear: if user connect to an AP hiding essid, thus time till connected would be longer than 
+		#normal connect(driver needs scan agian to find AP)
+
+	# Now normal network stuff
+	# Kill off any existing DHCP clients running
+	if os.access( DHCP_PIDFILE, os.R_OK):
+		if __debug__:
+			print "Killing existing DHCP..."
+		try:
+			if DHCP_KILL_COMMAND != '':
+				if __debug__:
+					print DHCP_KILL_COMMAND
+				os.popen( DHCP_KILL_COMMAND )
+			else:
+				os.kill( int(open(DHCP_PIDFILE, mode='r').readline()), signal.SIGTERM )
+		except OSError:
+			print "Stale pid file.  Removing"
+			os.remove( DHCP_PIDFILE )
+		if os.path.isfile( DHCP_PIDFILE ):
+			print "Stale pid file.  Removing"
+			os.remove( DHCP_PIDFILE )
+
+	if status_win:			
+		pulse_process_bar()
+
+	use_dhcp = profile['use_dhcp']
+	if use_dhcp :
+		# get ip in dhcp_thread
+		dhcp_flag = True
+		if status_win:
+			status_win.update_message("Acquiring IP Address")
+
+		while dhcp_flag and (not exit_flag):
+			if status_win:
+				pulse_process_bar()
+			else:
+				time.sleep(0.5)
+
+ 		if not get_current_ip():
+ 			if status_win:
+ 				status_win.update_message("Could not get IP address!")
+				pulse_process_bar()
+ 				time.sleep(2)
+ 			else:
+ 				print "Could not get IP address!"
+			dhcp_not_get_ip = True
+ 		else:
+ 			if status_win:
+ 				status_win.update_message("Got IP address. Done")
+				pulse_process_bar()
+ 				time.sleep(2)
+	else:
+		ip 		= profile['ip']
+		netmask = profile['netmask']
+		gateway = profile['gateway']
+		domain	= profile['domain']
+		dns1	= profile['dns1']
+		dns2 	= profile['dns2']
+		ifconfig_command= "%s %s down; %s %s %s netmask %s" % \
+			( IFCONFIG_COMMAND, INTERFACE, IFCONFIG_COMMAND, INTERFACE, ip, netmask )
+		route_command 	= "%s add default gw %s" % ( ROUTE_COMMAND, gateway )
+		s = ''
+		if domain != '':
+			s += "domain %s\n" % domain
+		#Spear modify the lines below @version 0.2.6
+		#if dns1 != '':
+		if dns1 != '0.0.0.0' and dns1 != '':
+			s += "nameserver %s\n" % dns1
+		#Spear modify the lines below @version 0.2.6
+		#if dns2 != '':
+		if dns2 != '0.0.0.0' and dns2 != '':
+			s += "nameserver %s\n" % dns2
+		if ( s != '' ):
+			f=open('/etc/resolv.conf', 'w')
+			f.write(s)
+			f.close
+
+		os.system( ifconfig_command )
+		os.system( route_command )
+
+	if status_win:
+		pulse_process_bar()
+
+	# Let's run the postscript
+	postscript = profile['postscript']
+	if postscript.strip() != '':
+		# got something to execute
+		if __debug__:
+			print "executing postscript:", postscript
+		os.system( postscript )
+
+	connecting_to_network = False
+
+def	disconnect_interface():
+	msg = "Disconnecting"
+	say( msg )
+	if __debug__:
+		print msg
+	# Kill off any existing DHCP clients running
+	try:
+		if DHCP_KILL_COMMAND != '':
+			if __debug__:
+				print DHCP_KILL_COMMAND
+			os.popen( DHCP_KILL_COMMAND )
+	except:
+		if os.access( DHCP_PIDFILE, os.R_OK):
+			if __debug__:
+				print "Killing existing DHCP..."
+			try:
+				os.kill( int(open(DHCP_PIDFILE, mode='r').readline()), signal.SIGTERM )
+			except OSError:
+				print "Stale pid file.  Removing"
+				os.remove( DHCP_PIDFILE )
+			if os.path.isfile( DHCP_PIDFILE ):
+				print "Stale pid file.  Removing"
+				os.remove( DHCP_PIDFILE )
+				
+	#Spear add the lines below @08/11/27
+			
+	# Kill off any existing WPA_SUPPLICANT clients running
+	if os.access( WPA_SUPPLICANT_PIDFILE, os.R_OK):
+		#if __debug__:
+		print "Killing existing WPA_SUPPLICANT for user disconnected..."
+		try:
+			if not WPA_SUPPLICANT_KILL_COMMAND == '':
+				os.spawnlp( os.P_WAIT, WPA_SUPPLICANT_KILL_COMMAND, WPA_SUPPLICANT_KILL_COMMAND )
+			os.kill( int(open(WPA_SUPPLICANT_PIDFILE, mode='r').readline()), signal.SIGTERM )
+		except OSError:
+			print "Stale pid file.  Removing"
+			os.remove( WPA_SUPPLICANT_PIDFILE )
+		if os.path.isfile( WPA_SUPPLICANT_PIDFILE ):
+			print "Stale pid file.  Removing"
+			os.remove( WPA_SUPPLICANT_PIDFILE )
+	#Spear add the line below @08/11/07: wait to kill wpa_supplicant completly
+	time.sleep(0.1)
+
+	# Lets clear out the wireless stuff
+	if __debug__:
+		print 'Lets clear out the wireless stuff'
+	os.spawnlp( os.P_WAIT, 'iwconfig', IWCONFIG_COMMAND, INTERFACE, 'essid', 'off' )
+	os.spawnlp( os.P_WAIT, 'iwconfig', IWCONFIG_COMMAND, INTERFACE, 'key', 'off' )
+	os.spawnlp( os.P_WAIT, 'iwconfig', IWCONFIG_COMMAND, INTERFACE, 'mode', 'auto' )
+	#Spear mask the line below @version 0.0.8
+	#os.spawnlp( os.P_WAIT, 'iwconfig', IWCONFIG_COMMAND, INTERFACE, 'channel', 'auto' )
+
+	# Now take the interface down
+	if __debug__:
+		print 'Now take the interface down'
+	os.spawnlp( os.P_WAIT, 'ifconfig', IFCONFIG_COMMAND, INTERFACE, 'down' )
+	# Since it may be brought back up by the next scan, let's unset it's IP
+	if __debug__:
+		print 'Since it may be brought back up by the next scan, lets unset its IP'
+	os.spawnlp( os.P_WAIT, 'ifconfig', IFCONFIG_COMMAND, INTERFACE, '0.0.0.0' )
+	if __debug__:
+		print 'Disconnect complete.'
+
+def get_profile_from_conf_file( essid ):
+	global config_options
+	# We got the essid, get the key
+	profile = {}
+	if not confFile.has_section( essid ):
+		return None
+	profile['ssid']		= essid
+	#Spear mask the line below @version 0.07
+	#profile['key']		= ''
+	profile['mode']		= ''
+	#Spear mask the line below @version 0.07
+	#profile['security']	= ''
+	profile['prescript']= ''
+	profile['postscript']= ''
+	profile['channel']	= ''
+	profile['signal']	= '0'
+	profile['protocol']	= 'b'
+	#Spear mask the line below @version 0.07
+	#if confFile.has_option( essid, "key" ):
+		#profile['key']	= confFile.get( essid, "key" )
+	if confFile.has_option( essid, "mode" ):
+		profile['mode']	= confFile.get( essid, "mode" )
+	#Spear mask the line below @version 0.07
+	#if confFile.has_option( essid, "security" ):
+		#profile['security']	= confFile.get( essid, "security" )
+	if confFile.has_option( essid, "prescript" ):
+		profile['prescript']= confFile.get( essid, "prescript" )
+	if confFile.has_option( essid, "postscript" ):
+		profile['postscript']= confFile.get( essid, "postscript" )
+	if confFile.has_option( essid, "channel" ):
+		profile['channel']	= confFile.get( essid, "channel" )
+	# Now normal network
+	profile['use_wpa']	= False
+	if confFile.has_option( essid, "use_wpa" ):
+		profile['use_wpa'] = confFile.getboolean( essid, "use_wpa" )
+
+	#Spear add the lines below @version 0.2.0
+	profile['key_valid'] = False
+	if confFile.has_option( essid, "key_valid" ):
+		profile['key_valid'] = confFile.getboolean( essid, "key_valid" )
+	#print "get_profile_from_conf_file: profile['key_valid']: ", profile['key_valid']
+	
+	#Spear add the lines below @version 0.2.3
+	profile['key_content'] = ''
+	if confFile.has_option( essid, "key_content" ):
+		profile['key_content'] = confFile.get( essid, "key_content" )
+
+	#Spear add the lines below @version 0.2.4
+	profile['key_id'] = '0'
+	if confFile.has_option( essid, "key_id" ):
+		profile['key_id'] = confFile.get( essid, "key_id" )
+		
+	#Spear add the lines below @version 0.2.2
+	profile['use_enc'] = False
+	if confFile.has_option( essid, "use_enc" ):
+		profile['use_enc'] = confFile.getboolean( essid, "use_enc" )
+	if confFile.has_option( essid, "sec_type" ):
+		profile['sec_type'] = confFile.get( essid, "sec_type" )
+	if confFile.has_option( essid, "enc_type" ):
+		profile['enc_type'] = confFile.get( essid, "enc_type" )
+	#Spear add end
+
+	profile['wpa_driver'] 		= ''
+	if confFile.has_option( essid, "wpa_driver" ):
+		profile['wpa_driver']	= confFile.get( essid, "wpa_driver" )
+	profile['use_dhcp']	= False
+	if confFile.has_option( essid, "use_dhcp" ):
+		profile['use_dhcp'] = confFile.getboolean( essid, "use_dhcp" )
+	profile['ip'] 		= ''
+	if confFile.has_option( essid, "ip" ):
+		profile['ip']	= confFile.get( essid, "ip" )
+	profile['netmask']	= ''
+	if confFile.has_option( essid, "netmask" ):
+		profile['netmask'] = confFile.get( essid, "netmask" )
+	profile['gateway']	= ''
+	if confFile.has_option( essid, "gateway" ):
+		profile['gateway'] = confFile.get( essid, "gateway" )
+	profile['domain']	= ''
+	if confFile.has_option( essid, "domain" ):
+		profile['domain'] = confFile.get( essid, "domain" )
+	profile['dns1']		= ''
+	if confFile.has_option( essid, "dns1" ):
+		profile['dns1'] = confFile.get( essid, "dns1" )
+	profile['dns2']		= ''
+	if confFile.has_option( essid, "dns2" ):
+		profile['dns2'] = confFile.get( essid, "dns2" )
+	return profile
+
+def set_profile_to_conf_file( profile ):
+	if not confFile.has_section( profile['ssid'] ):
+		confFile.add_section( profile['ssid'] )
+	#Spear mask the two lines below @version 0.07
+	#confFile.set( profile['ssid'], 'key', profile['key'] )
+	#confFile.set( profile['ssid'], 'security', profile['security'] )
+	confFile.set( profile['ssid'], 'prescript', profile['prescript'] )
+	confFile.set( profile['ssid'], 'postscript', profile['postscript'] )
+	confFile.set( profile['ssid'], 'mode', profile['mode'] )
+	confFile.set( profile['ssid'], 'channel', profile['channel'] )
+	# wpa
+	if profile['use_wpa']:
+		confFile.set( profile['ssid'], 'use_wpa', 'yes' )
+		confFile.set( profile['ssid'], 'wpa_driver', profile['wpa_driver'] )
+	else:
+		confFile.set( profile['ssid'], 'use_wpa', 'no' )
+		
+	#Spear add the lines below @version 0.2.0
+	#key_valid
+	#print "set_profile_to_conf_file: profile['key_valid']: ", profile['key_valid']
+	if profile['key_valid']:
+		confFile.set( profile['ssid'], 'key_valid',  'yes')
+	else:
+		confFile.set( profile['ssid'], 'key_valid',  'no')
+
+	#Spear add the line below @version 0.2.3
+	confFile.set( profile['ssid'], 'key_content', profile['key_content'] )
+	#Spear add the line below @version 0.2.4
+	confFile.set( profile['ssid'], 'key_id', profile['key_id'] )
+		
+	# dhcp
+	if profile['use_dhcp']:
+		confFile.set( profile['ssid'], 'use_dhcp', 'yes' )
+		try: confFile.remove_option( profile['ssid'], 'ip' )
+		except: pass
+		try: confFile.remove_option( profile['ssid'], 'netmask' )
+		except: pass
+		try: confFile.remove_option( profile['ssid'], 'gateway' )
+		except: pass
+		try: confFile.remove_option( profile['ssid'], 'domain' )
+		except: pass
+		try: confFile.remove_option( profile['ssid'], 'dns1' )
+		except: pass
+		try: confFile.remove_option( profile['ssid'], 'dns2' )
+		except: pass
+	else:
+		confFile.set( profile['ssid'], 'use_dhcp', 'no' )
+		confFile.set( profile['ssid'], 'ip', profile['ip'] )
+		confFile.set( profile['ssid'], 'netmask', profile['netmask'] )
+		confFile.set( profile['ssid'], 'gateway', profile['gateway'] )
+		confFile.set( profile['ssid'], 'domain', profile['domain'] )
+		confFile.set( profile['ssid'], 'dns1', profile['dns1'] )
+		confFile.set( profile['ssid'], 'dns2', profile['dns2'] )
+	#Spear mask the line below and add new ones @version 0.2.1
+	#confFile.write( open( CONF_FILE, "w" ) )
+	fd = open( CONF_FILE, "w" )
+	confFile.write( fd )
+	fd.close()
+	#Spear modify end
+
+#Update WIFI_CHANNELS and Set Domain to driver by iwpriv. 
+def update_domain( domain ):
+	global WIFI_CHANNELS
+	iwpriv_args = [ INTERFACE ]
+
+	if domain == 'US':
+		WIFI_CHANNELS	= [ '', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']
+		iwpriv_args.append( 'domain 0' )
+	elif domain == 'Europe':
+		WIFI_CHANNELS	= [ '', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13']
+		iwpriv_args.append( 'domain 1' )
+	elif domain == 'Japan':
+		WIFI_CHANNELS	= [ '', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14']
+		iwpriv_args.append( 'domain 2' )
+	elif domain == 'RestofWorld':
+		WIFI_CHANNELS	= [ '', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13']
+		iwpriv_args.append( 'domain 3' )
+
+	if INTERFACE != "auto_detect":		
+		iwpriv_command = IWPRIV_COMMAND + ' ' + ' '.join(iwpriv_args)
+		if __debug__:
+			print "iwpriv command: ", iwpriv_command
+		os.system( iwpriv_command )
+
+
+##################
+#Spear add the lines below @version 0.1.0
+class Wifi_radar_tray:
+	def __init__( self, parent ):
+		#gtk.StatusIcon.__init__(self)
+		self.parent = parent
+		self.tray = gtk.StatusIcon()
+		#Spear add the line below @version 0.2.9
+		self.show_main_window = False
+		
+		#Spear add the line below @version 0.2.9 to show notification
+		pynotify.init( "3DSP WiFi Radar" )
+		#Spear add end
+		
+		menu = '''
+		<ui>
+			<menubar name="Menubar">
+				<menu action="Menu">
+					<menuitem action="Wireless connecting"/>
+					<separator/>
+					<menuitem action="Help"/>
+					<menuitem action="About"/>
+					<separator/>
+					<menuitem action="Quit"/>
+				</menu>
+			</menubar>
+		</ui>
+    '''
+
+		actions = [
+    	('Menu',  None, 'Menu'),
+			('Wireless connecting', gtk.STOCK_CONNECT, 'Wireless connecting', None, 'action1 for test', self.on_view_network),
+			('action2', None, 'action2', None, 'action2 for test', self.on_action),
+			#Spear modify the line below @version 0.2.7 temply
+			#('Help', gtk.STOCK_HELP, 'Help', None, 'About', self.on_help),
+			('Help', gtk.STOCK_HELP, 'Help', None, 'About', None),
+			('About', gtk.STOCK_ABOUT, 'About', None, 'About', self.on_about),
+			('Quit', gtk.STOCK_QUIT, 'Quit', None, 'Quit', self.on_quit)
+		]
+
+		ag = gtk.ActionGroup('Actions')
+		ag.add_actions(actions)
+		self.manager = gtk.UIManager()
+		self.manager.insert_action_group(ag, 0)
+		self.manager.add_ui_from_string(menu)
+		self.menu = self.manager.get_widget('/Menubar/Menu/About').props.parent
+
+		self.tray.set_from_file("/usr/share/pixmaps/unconnected.png")
+		self.tray.set_tooltip("3DSP wifi card: unconnected")
+		self.tray.set_visible(True)
+	  
+		self.tray.connect('activate', self.on_activate)
+		self.tray.connect('popup-menu', self.on_popup_menu)
+
+	def on_activate( self, data ):
+		if self.show_main_window == False:
+			self.parent.window.show_all()
+			self.show_main_window = True
+		else:
+			self.parent.window.hide()
+			self.show_main_window = False
+
+	def on_popup_menu(self, status, button, time):
+		self.menu.popup(None, None, None, button, time)
+
+	def on_action( self, data ):
+		self.parent.window.show()
+		
+	def on_view_network( self, data ):
+		self.parent.window.show_all()
+
+	def on_help(self, data):
+		help_cmd = WIFI_RADAR_HELP_COMMAND + " " + WIFI_RADAR_HELP_FILE
+		os.spawnlp( os.P_NOWAIT, WIFI_RADAR_HELP_COMMAND, WIFI_RADAR_HELP_COMMAND, WIFI_RADAR_HELP_FILE )
+		#os.spawnlp( os.P_NOWAIT, WIFI_RADAR_HELP_COMMAND, help_cmd )
+		
+	def on_about(self, data):
+		#Spear add the lies below @version 0.0.7
+		global driver_verion
+		#set region through private ioctl interface, this must be done before scanning
+		version_pattern = re.compile( "driver_version\s*(:|=)(\w*)", re.I | re.M  | re.S )
+		get_ver_cmd = IWPRIV_COMMAND + " " + INTERFACE + " driver_version"
+		f = os.popen( get_ver_cmd , "r" )
+		driver_version = f.read()
+		f.close()
+		m = version_pattern.search( driver_version )
+		if m:
+			driver_verion = m.groups()[1]
+		else:
+			driver_verion = ''
+		if __debug__:			
+			print "dirver version: ", driver_verion
+	
+		dialog = gtk.AboutDialog()
+		#Spear modify the lines below @version 0.2.7
+		#dialog.set_name('3DSP WiFi Radar')
+		#dialog.set_version(WIFI_RADAR_VERSION)
+		dialog.set_name(WIFI_RADAR_VERSION)
+		#Spear modify end
+		comment1 = '3DSP Wireless Card Management Tool'
+
+		#Spear add the lines below @version 0.2.7
+		if driver_verion != '':
+			driver_ver = "Driver version " + driver_verion
+		copyright = 'Copyright (C) 1998-2008 Free Software Foundation, Inc.'
+		if driver_verion != '':
+			comments = comment1 + '\n' + driver_ver + '\n' + copyright
+		else:
+			comments = comment1 + '\n' + copyright
+		dialog.set_comments(comments)
+		dialog.set_website('http://www.3dsp.com')
+		dialog.run()
+		dialog.destroy()
+
+	def on_quit(self, data):
+		global lock
+		global exit_flag
+		
+		#cancel scanning thread
+		exit_flag = True
+
+#		if None != lock: lock.acquire()
+		self.parent.destroy()
+#		if None != lock: lock.release()
+
+	def show_notification(self, notify_info, time = 3000):
+		geo = self.tray.get_geometry()
+		rect = geo[1]
+
+		n = pynotify.Notification("3DSP WiFi Radar", notify_info, "/usr/share/pixmaps/wifi_radar_32x32.png")
+		n.set_hint("x", rect[0]+rect[2]/2)
+		n.set_hint("y", rect[1]+rect[3])
+		n.set_urgency(pynotify.URGENCY_NORMAL)
+		n.set_timeout(time)
+		#n.add_action("clicked","Button text", self.test, None)
+		n.show()
+#Spear add end
+
+# The main window
+class radar_window:
+	def __init__( self ):
+		# create the main window and connect the normal events
+		global	signal_xpm_none
+		global	signal_xpm_low
+		global	signal_xpm_barely
+		global	signal_xpm_ok
+		global	signal_xpm_best
+		global	known_profile_icon
+		global	unknown_profile_icon
+		global	wifi_radar_icon
+		#Spear add the line below @version 0.1.0
+		global change_tray_icon
+		self.signal_none_pb	= gtk.gdk.pixbuf_new_from_xpm_data( signal_xpm_none )
+		self.known_profile_icon		= gtk.gdk.pixbuf_new_from_inline( len( known_profile_icon[0] ), known_profile_icon[0], False )
+		self.unknown_profile_icon	= gtk.gdk.pixbuf_new_from_inline( len( unknown_profile_icon[0] ), unknown_profile_icon[0], False )
+		self.signal_low_pb	= gtk.gdk.pixbuf_new_from_xpm_data( signal_xpm_low )
+		self.signal_barely_pb= gtk.gdk.pixbuf_new_from_xpm_data( signal_xpm_barely )
+		self.signal_ok_pb	= gtk.gdk.pixbuf_new_from_xpm_data( signal_xpm_ok )
+		self.signal_best_pb	= gtk.gdk.pixbuf_new_from_xpm_data( signal_xpm_best )
+		self.window = gtk.Dialog('WiFi Radar', None, gtk.DIALOG_MODAL )
+		#allen add the two lines below @version 0.2.6
+		self.window.set_keep_above(True)
+		self.window.set_position(1)
+		
+		icon = gtk.gdk.pixbuf_new_from_inline( len( wifi_radar_icon[0] ), wifi_radar_icon[0], False )
+		self.window.set_icon( icon )
+		self.window.set_border_width( 10 )
+		self.window.set_size_request( 450, 300 )
+		self.window.set_title( "3DSP WiFi Radar" )
+		self.window.connect( 'delete_event', self.delete_event )
+		self.window.connect( 'destroy', self.destroy, )
+		# let's create all our widgets
+		self.current_network = gtk.Label()
+		self.current_network.show()
+		self.close_button = gtk.Button( "Close", gtk.STOCK_CLOSE )
+		self.close_button.show()
+		self.close_button.connect( 'clicked', self.delete_event, None  )
+		self.preferences_button = gtk.Button( "Preferences", gtk.STOCK_PREFERENCES )
+		self.preferences_button.show()
+		self.preferences_button.connect( 'clicked', self.edit_preferences, None )
+		#                            apname known_icon      known available wep_icon signal_level    mode protocol
+		self.pstore = gtk.ListStore( str,   gtk.gdk.Pixbuf, int,  int,      str,     gtk.gdk.Pixbuf, str, str )
+		self.rebuild_plist_items()
+		self.plist = gtk.TreeView( self.pstore )
+		self.pcol	= gtk.TreeViewColumn( "SSID" )
+		# The ssid column
+		self.plist.append_column( self.pcol )
+		self.pix_cell 	= gtk.CellRendererPixbuf()
+		self.wep_cell 	= gtk.CellRendererPixbuf()
+		self.ssid_cell 	= gtk.CellRendererText()
+		self.pcol.pack_start( self.pix_cell, False )
+		self.pcol.pack_start( self.wep_cell, False )
+		self.pcol.pack_start( self.ssid_cell, True )
+		self.pcol.add_attribute( self.wep_cell, 'stock-id', 4 )
+		self.pcol.add_attribute( self.pix_cell, 'pixbuf', 1 )
+		self.pcol.add_attribute( self.ssid_cell, 'text', 0 )
+		self.sig_cell 	= gtk.CellRendererPixbuf()
+		self.scol	= gtk.TreeViewColumn( "Signal" )
+		self.scol.pack_start( self.sig_cell, True )
+		self.scol.add_attribute( self.sig_cell, 'pixbuf', 5 )
+		self.plist.append_column( self.scol )
+		# The mode column
+		self.mode_cell 	= gtk.CellRendererText()
+		self.mcol	= gtk.TreeViewColumn( "Mode" )
+		self.mcol.pack_start( self.mode_cell, True )
+		self.mcol.add_attribute( self.mode_cell, 'text', 6 )
+		self.plist.append_column( self.mcol )
+		# The protocol column
+		self.prot_cell 	= gtk.CellRendererText()
+		self.protcol	= gtk.TreeViewColumn( "802.11" )
+		self.protcol.pack_start( self.prot_cell, True )
+		self.protcol.add_attribute( self.prot_cell, 'text', 7 )
+		self.plist.append_column( self.protcol )
+		# DnD Ordering
+		self.plist.set_reorderable( True )
+		#self.pstore.connect( 'row-changed', self.save_auto_profile_order )
+		# the list scroll bar
+		sb = gtk.VScrollbar( self.plist.get_vadjustment() )
+		sb.show()
+		self.plist.show()
+		#
+		self.new_button = gtk.Button( "New" )
+		self.new_button.connect( 'clicked', self.create_new_profile, None  )
+		self.new_button.show()
+		#
+		self.edit_button = gtk.Button( "Configure" )
+		self.edit_button.connect( 'clicked', self.edit_profile, None  )
+		self.edit_button.show()
+		#
+		self.delete_button = gtk.Button( "Delete" )
+		self.delete_button.connect( 'clicked', self.delete_profile, None  )
+		self.delete_button.show()
+		#
+		self.connect_button = gtk.Button( "Connect" )
+		self.connect_button.connect( 'clicked', self.connect_profile, None  )
+	
+		#
+		self.disconnect_button = gtk.Button( "Disconnect" )
+		self.disconnect_button.connect( 'clicked', self.disconnect_profile, None  )
+		
+		# lets add our widgets
+		rows		= gtk.VBox( False, 3 )
+		net_list	= gtk.HBox( False, 0 )
+		listcols	= gtk.HBox( False, 0 )
+		prows		= gtk.VBox( False, 0 )
+		# lets start packing
+		# the network list
+		net_list.pack_start( self.plist, True, True, 0 )
+		net_list.pack_start( sb, False, False, 0 )
+		# the rows level
+		rows.pack_start( net_list , True, True, 0 )
+		rows.pack_start( self.current_network, False, True, 0 )
+		# the list columns
+		listcols.pack_start( rows, True, True, 0 )
+		listcols.pack_start( prows, False, False, 5 )
+		# the list buttons
+		prows.pack_start( self.new_button, False, False, 2 )
+		prows.pack_start( self.edit_button, False, False, 2 )
+		prows.pack_start( self.delete_button, False, False, 2 )
+		prows.pack_end( self.connect_button, False, False, 2 )
+		prows.pack_end( self.disconnect_button, False, False, 2 )
+
+		self.window.action_area.pack_start( self.preferences_button )
+		self.window.action_area.pack_start( self.close_button )
+
+		rows.show()
+		prows.show()
+		listcols.show()
+		self.window.vbox.add( listcols )
+		self.window.vbox.set_spacing( 3 )
+		
+		#Spear mask the line below @version 0.2.9
+		#self.window.show_all()
+
+		#
+		# Now, immediately hide these two.  The proper one will be
+		# displayed later, based on interface state. -BEF-
+		self.disconnect_button.hide()
+		self.connect_button.hide()
+		
+		
+		#Spear add the lines below @08/11/27
+		self.connect_button.show()
+		#Spear add end
+		
+		#Spear add the lines below to add system tray @version 0.1.0
+		if __debug__:
+			print "add tray icon..."
+		self.status_icon = Wifi_radar_tray(self)
+		change_tray_icon = 1
+		#Spear add end
+
+	#Spear add the lines below
+	#def on_activate(self, main_window):
+		#main_window.show()
+	#Spear add end
+	
+	def main( self ):
+		gtk.main()
+
+	def destroy( self, widget = None):
+		global lock
+		if None != lock: lock.acquire()
+		gtk.main_quit()
+		if None != lock: lock.release()
+
+	def delete_event( self, widget, event, data=None ):
+		# Save the preferred networks order
+		global exit_flag
+		#Spear mask the lines below @version 0.1.0
+		#exit_flag = True
+		#self.destroy()
+		#Spear add the lines below @version 0.1.0
+		self.window.hide()
+		#Spear modify end
+		#return False
+		#Spear add the lines @version 0.2.9
+		self.status_icon.show_main_window = False
+		#Spear add end
+		return True
+
+	def rebuild_plist_items( self ):
+		# Add our known profiles in order
+		global lock
+		if None != lock: lock.acquire()	
+
+		for ssid in auto_profile_order:
+			ssid = ssid.strip()
+			if access_points.has_key( ssid ) and access_points[ ssid ]['known']:
+				wep = None
+				if access_points[ ssid ]['encrypted']: wep = gtk.STOCK_DIALOG_AUTHENTICATION
+				# 1 here means that we know this ssid ---------------v
+				self.pstore.append( [ ssid, self.known_profile_icon, 1, 0, wep, self.signal_none_pb, access_points[ ssid ]['mode'], access_points[ ssid ]['protocol'] ] )
+		# Now add any known profiles not in the profile order
+		for ap in access_points:
+			if ap in auto_profile_order: continue
+			wep = None
+			if access_points[ ap ]['encrypted']: wep = gtk.STOCK_DIALOG_AUTHENTICATION
+			# 1 here means that we know this ssid ---------------v
+			self.pstore.append( [ ap, self.unknown_profile_icon, 0, 0, wep, self.signal_none_pb, access_points[ ap ]['mode'], access_points[ ap ]['protocol'] ] )
+		if None != lock: lock.release()
+
+	#Spear add the function below @08/11/27
+		
+	def update_plist_items( self ):
+		"""Updates the profiles list"""
+		global lock
+		global current_ip
+		global current_ssid
+		global change_tray_icon
+		global prev_ssid
+
+		#if __debug__:
+		#	print "updating profile list"
+		gtk.gdk.threads_enter()
+#		if None != lock: lock.acquire()	
+
+		# update the current ip and ssid
+		#Spear add the lines below @version 0.2.6
+		if current_ssid == '':
+			self.current_network.set_text( "No valid wireless device!" )
+		else:
+		#Spear add end
+			self.current_network.set_text( "Connected to %s (IP:%s)" % ( current_ssid, current_ip ) )
+
+		#Spear: show Connect/Disconnect button accroding to essid
+		#Spear modify the line below @version 0.2.6
+		if current_ssid == '':
+			self.disconnect_button.hide()
+			self.connect_button.show()
+			self.connect_button.set_sensitive(False)
+			self.status_icon.tray.set_from_file("/usr/share/pixmaps/wifi-radar.png")
+			tooltip = "No valid wireless device"
+			self.status_icon.tray.set_tooltip(tooltip)
+		elif current_ssid == 'None':
+			self.disconnect_button.hide()
+			self.connect_button.show()
+			self.connect_button.set_sensitive(True)
+			self.status_icon.tray.set_from_file("/usr/share/pixmaps/wifi-radar.png")
+			tooltip = INTERFACE + ": unconnected"
+			self.status_icon.tray.set_tooltip(tooltip)
+		else:
+			self.connect_button.hide()
+			self.disconnect_button.show()
+			self.connect_button.set_sensitive(True)
+
+			if change_tray_icon == 1:
+				self.status_icon.tray.set_from_file("/usr/share/pixmaps/connected1.png")
+				change_tray_icon = 2
+			elif change_tray_icon == 2:
+				self.status_icon.tray.set_from_file("/usr/share/pixmaps/connected2.png")
+				change_tray_icon = 3
+			elif change_tray_icon == 3:
+				self.status_icon.tray.set_from_file("/usr/share/pixmaps/connected3.png")
+				change_tray_icon = 4
+			elif change_tray_icon == 4:
+				self.status_icon.tray.set_from_file("/usr/share/pixmaps/connected4.png")
+				change_tray_icon = 1
+
+			tooltip = INTERFACE + "\nconnect to " + current_ssid
+			self.status_icon.tray.set_tooltip(tooltip)
+		#Spear add end
+
+		#Spear add the line below to show notification @version 0.2.9
+		if prev_ssid != current_ssid:
+			if current_ssid == '':
+				self.status_icon.show_notification("No valid wireless device")
+			elif current_ssid == 'None':
+				self.status_icon.show_notification(INTERFACE + ": unconnected")
+			else:
+				self.status_icon.show_notification(INTERFACE + "\nconnect to " + current_ssid)
+				
+			prev_ssid = current_ssid
+		#Spear add end
+
+		for ap in access_points:
+			prow = self.get_row_by_ssid( ap )
+			signal_value = int(access_points[ ap ]['signal'])
+			if ( signal_value == 0 ) and (access_points[ ap ]['known'] == False):
+				if prow:	#do NOT show AP who's signal strenth is 0 except having a profile 20100629
+					self.pstore.remove(prow.iter)
+				access_points[ ap ]['available'] = False
+			else:
+				wep = None
+				if access_points[ ap ]['encrypted']: wep = gtk.STOCK_DIALOG_AUTHENTICATION
+				if prow:
+					#if __debug__:
+					#	print "Setting prow", ap, access_points[ ap ]				
+					prow[4] = wep
+					prow[5] = self.pixbuf_from_signal( access_points[ ap ][ 'signal' ] )
+					prow[6] = access_points[ ap ][ 'mode' ]
+					prow[7] = access_points[ ap ][ 'protocol' ]
+					#for val in prow:
+						#print val
+				else:
+					#if __debug__:
+					#	print "New profile", ap, access_points[ ap ]
+					# 1 here means that we know this ssid ---------------v
+					self.pstore.append( [ ap, self.unknown_profile_icon, 0, 0, wep,
+						self.pixbuf_from_signal( access_points[ ap ]['signal'] ),
+						access_points[ ap ]['mode'],
+						access_points[ ap ]['protocol'] ] )
+			
+			# give the list a chance to update
+			#while gtk.events_pending():
+			#	gtk.main_iteration()
+
+#		if None != lock: lock.release()
+		gtk.gdk.threads_leave()
+
+		return True
+
+	def pixbuf_from_signal( self, signal ):
+		signal = int( signal )
+		#print signal
+		if signal >= 80 or signal == 0:
+			return self.signal_none_pb
+		elif signal >= 78:
+			return self.signal_low_pb
+		elif signal >= 75:
+			return self.signal_barely_pb
+		elif signal >= 60:
+			return self.signal_ok_pb
+		elif signal < 60:
+			return self.signal_best_pb
+		else:
+			return None
+
+	def get_row_by_ssid( self, ssid ):
+		for row in self.pstore:
+			if row[0] == ssid:
+				return row
+		return None
+
+	# init and run the preferences dialog
+	def edit_preferences( self, widget, data=None ):
+		global INTERFACE, SCAN_TIMEOUT, DEFAULT_REGION, SPEAK_UP, COMMIT_REQUIRED, IFUP_REQUIRED
+		global DHCP_COMMAND, DHCP_PIDFILE, DHCP_ARGS, DHCP_KILL_COMMAND
+		global WIFI_CHANNELS
+
+		p = preferences_dialog( self )
+		#Spear add the line below @version 0.2.5
+		domain = confFile.get( "DEFAULT", "domain" )
+		if domain == "US":
+			p.wregions.set_active( 0 )
+		elif domain == "Europe":
+			p.wregions.set_active( 1 )
+		elif domain == "Japan":
+			p.wregions.set_active( 2 )
+		elif domain == "RestofWorld":
+			p.wregions.set_active( 3 )
+		
+		ok = p.run()
+		
+		#Spear add the lines @version 0.2.5
+		if ok == gtk.RESPONSE_OK:
+			iwpriv_args = [ INTERFACE ]
+
+			# save preferences to global variables and conf file
+			if p.w_auto_detect.get_active():
+				set_network_device("auto_detect")
+				confFile.set("DEFAULT", "interface", "auto_detect")
+			else:
+				#Spear mask the lines below and add new one @version 0.2.6(it`s a silly mistake of original author)
+				#set_network_device(self.w_interface.child.get_text())
+				set_network_device(p.w_interface.child.get_text())
+				confFile.set("DEFAULT", "interface", INTERFACE)
+
+			# reconfigure the dhcp commands in case the network device was changed
+			(DHCP_COMMAND, DHCP_PIDFILE, DHCP_ARGS, DHCP_KILL_COMMAND) = configure_dhcp_client()
+#			SCAN_TIMEOUT = p.w_scan_timeout.get_value_as_int()
+#			SPEAK_UP = p.w_speak_up.get_active()
+#			COMMIT_REQUIRED = p.w_commit_required.get_active()
+#			IFUP_REQUIRED = p.w_ifup_required.get_active()
+#			if IFUP_REQUIRED:
+#				os.spawnlp( os.P_WAIT, 'ifconfig', IFCONFIG_COMMAND, INTERFACE, "up" )
+#			confFile.set("DEFAULT", "scan_timeout", str(SCAN_TIMEOUT))
+			
+#			confFile.set("DEFAULT", "speak_up", str(SPEAK_UP))
+#			confFile.set("DEFAULT", "commit_required", str(COMMIT_REQUIRED))
+#			confFile.set("DEFAULT", "ifup_required", str(IFUP_REQUIRED))
+			
+			#domain stuff...
+			active = p.wregions.get_active()	
+			if active == 0:
+				DEFAULT_REGION = "US"
+			elif active == 1:
+				DEFAULT_REGION = "Europe"
+			elif active == 2:
+				DEFAULT_REGION = "Japan"
+			elif active == 3:
+				DEFAULT_REGION = "RestofWorld"
+			#restore new selection to config file
+			confFile.set("DEFAULT", "domain", str(DEFAULT_REGION))
+			#renew region and channel list at once
+			update_domain( DEFAULT_REGION )
+			
+			#Spear mask the line below and add new ones @version 0.2.1
+			#confFile.write( open( CONF_FILE, "w" ) )
+			fd = open( CONF_FILE, "w" )
+			confFile.write( fd )
+			fd.close()
+
+		p.destroy()
+
+	def create_new_profile( self, widget, data=None ):
+		global lock
+		p = profile_dialog( self )
+		#Spear add the line below @version 0.1.0
+		p.wifi_expander.connect( 'notify::expanded', p.toggle_bss_ibss )
+		
+		#Spear add the lines below @version 0.2.2
+		# create the encryption expander
+		p.enc_expander = gtk.Expander( "No Encryption" )
+		p.enc_expander.connect( 'notify::expanded', p.toggle_enc_mode )
+		wifi_table = gtk.Table( 4, 2, False )
+		wifi_table.set_row_spacings( 3 )
+		wifi_table.set_col_spacings( 3 )
+		
+		# The sec labels
+		l = gtk.Label( 'Security Type' )
+		wifi_table.attach( l, 0, 1, 0, 1 )
+
+		# The security combo boxes
+		p.sec = gtk.combo_box_new_text()
+		p.sec.connect("changed", p.secure_type_changed)
+		for sec in WIFI_SECURITY:
+			p.sec.append_text( sec )
+		wifi_table.attach( p.sec, 1, 2, 0, 1 )
+
+		# The enc labels
+		l = gtk.Label( 'Encryption Type' )
+		wifi_table.attach( l, 0, 1, 1, 2 )
+			
+		# The encryption combo boxe
+		p.enc = gtk.combo_box_new_text()
+		for enc in WIFI_ENCRYPTION:
+			p.enc.append_text( enc )
+		p.enc.set_active( 0 )
+		p.enc.set_sensitive( False )
+		wifi_table.attach( p.enc, 1, 2, 1, 2 )
+		
+		p.sec.set_active( 0 )
+				
+		# Add the wifi table to the expander
+		p.enc_expander.add( wifi_table )
+		# Add the expander to the dialog
+		p.dialog.vbox.pack_start( p.enc_expander, False, False, 5 )
+		#Spear add end
+		
+		while True:
+			ok = p.run()
+			if ok:
+				profile = p.get_profile()
+				
+				#Spear add the line below @version 0.2.0
+				profile['key_valid'] = False
+				#Spear add the line below @version 0.2.3
+				profile['key_content'] = ''
+				profile['key_id'] = '0'
+				
+				#Spear add the lines below @version 0.2.2
+				expanded = p.enc_expander.get_expanded()
+				if expanded:
+					profile['use_enc'] = True
+					sec_type = p.sec.get_active()
+					profile['sec_type'] = WIFI_SECURITY[sec_type]
+					if 1 == sec_type or 2 == sec_type:
+						enc_type = p.enc.get_active()
+						profile['enc_type'] = WIFI_ENCRYPTION[enc_type]
+				else:
+					profile['use_enc'] = False
+					
+				#set these key word to config profile
+				if not confFile.has_section( profile['ssid'] ):
+					confFile.add_section( profile['ssid'] )
+				if profile['use_enc']:
+					confFile.set( profile['ssid'], 'use_enc',  'yes')
+					if __debug__:
+						print "sec_type: ", profile['sec_type']
+					confFile.set( profile['ssid'], 'sec_type', profile['sec_type'] )
+					if WIFI_SECURITY[1] == profile['sec_type'] or WIFI_SECURITY[2] == profile['sec_type']:
+						if __debug__:
+							print "enc_type: ", profile['enc_type']
+						confFile.set( profile['ssid'], 'enc_type', profile['enc_type'] )
+				else:
+					confFile.set( profile['ssid'], 'use_enc',  'no')
+				#Spear add end
+		
+				# Check that the ssid does not exist already
+				if profile['ssid'] in access_points:
+ 					if access_points[ profile['ssid'] ]['available'] or access_points[ profile['ssid'] ]['known']:
+						dlg = gtk.MessageDialog(
+						self.window,
+						gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_MODAL,
+						gtk.MESSAGE_ERROR,
+						gtk.BUTTONS_OK,
+						"A profile for %s already exists" % profile['ssid'] )
+						dlg.run()
+						dlg.destroy()
+						del dlg
+						# try again
+						continue
+
+				set_profile_to_conf_file( profile )
+				# Add lets add it up
+				ap = {}
+				ap['known']		= True
+				ap['available']	= False
+				ap['encrypted'] = False
+
+				#Spear modify the lines below @version 0.2.5
+				#ap['mode']		= ''
+				ap['mode']		= profile['mode']
+				#Spear add end
+
+				ap['security']	= ''
+				ap['prescript']	= ''
+				ap['postscript']= ''
+				#Spear mask the line below and add new one below to renew channel @version 0.1.0
+				#ap['channel']	= 
+				ap['channel'] = str(p.channel.get_active())
+				#SPear add end
+				#Spear modify the line below @version 0.2.5
+				#ap['protocol']	= 'b'
+				ap['protocol']	= 'g'
+				#Spear modify end
+				ap['signal']	= '0'
+				if confFile.has_option( profile['ssid'], 'key'):
+					if len( confFile.get( profile['ssid'], 'key' ) ) > 0:
+						ap['encrypted'] = True
+
+				if None != lock: lock.acquire()
+				
+				access_points[ profile['ssid'] ] = ap
+				# if it is not in the auto_profile_order add it
+				if not profile['ssid'] in auto_profile_order:
+					auto_profile_order.append( profile['ssid'] )
+				if None != lock: lock.release()
+				# add to the store
+				wep = None
+				if ap['encrypted']: wep = gtk.STOCK_DIALOG_AUTHENTICATION
+				self.pstore.append( [ profile['ssid'], self.known_profile_icon, 1, 0, wep, self.pixbuf_from_signal( ap['signal'] ), ap['mode'], ap['protocol'] ] )
+			break
+		p.destroy()
+
+	def edit_profile( self, widget, data=None ):
+		#Spear add the line below @version 0.1.0
+		global access_points
+		( store, selected_iter ) = self.plist.get_selection().get_selected()
+		if not selected_iter: return
+		ssid	= store.get_value( selected_iter, 0 )
+		known	= store.get_value( selected_iter, 2 )
+		if not known:
+			self.connect_profile(widget, 'noconnect')
+			return
+		#Spear modify the lines below @version 0.2.0
+		profile_g = get_profile_from_conf_file( ssid )
+		#print "edit_profile: profile['key_valid']: ", profile_g['key_valid']
+		p = profile_dialog( self )
+		p.set_profile( profile_g, True )
+
+		#Spear add the lines below @version 0.1.0
+		if __debug__:
+			print "mode: ", access_points[ ssid ]['mode']
+		if access_points[ ssid ]['mode'] == 'Ad-Hoc':
+			p.wifi_expander.set_label( WIFI_SET_IBSS )
+			p.wifi_expander.set_expanded( True )
+			p.mode.set_active( 1 )
+			p.mode.set_sensitive(False)
+			p.channel.set_active( int(access_points[ ssid ]['channel']) )
+		elif access_points[ ssid ]['mode'] == 'Master':
+			p.wifi_expander.set_expanded( False )
+			p.wifi_expander.set_label( WIFI_SET_BSS )
+			p.mode.set_active( 0 )
+			p.mode.set_sensitive(False)
+			p.channel.set_sensitive( False )
+			p.channel.set_active( int(access_points[ ssid ]['channel']) )
+		#Spear add end
+		
+		ok = p.run()
+		if ok:
+			profile = p.get_profile()
+			#Spear add the lines below @version 0.2.2
+			if profile_g['key_valid']:
+				profile['key_valid'] = True
+			else:
+				profile['key_valid'] = False
+				
+			#Spear add the lines below @version 0.2.3
+			profile['key_content'] = profile_g['key_content']
+			#Spear add the lines below @version 0.2.4
+			profile['key_id'] = profile_g['key_id']
+			#Spear add the lines below to renew channel @version 0.1.0
+			access_points[ ssid ]['channel'] = str(p.channel.get_active())
+			#SPear add end
+
+			if __debug__:
+				print "Got edited profile ", profile
+			set_profile_to_conf_file( profile )
+		p.destroy()
+
+	def delete_profile( self, widget, data=None ):
+		( store, selected_iter ) = self.plist.get_selection().get_selected()
+		global auto_profile_order
+		if not selected_iter: return
+		ssid	= store.get_value( selected_iter, 0 )
+		known	= store.get_value( selected_iter, 2 )
+		if not known: return
+		dlg = gtk.MessageDialog(
+					self.window,
+					gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_MODAL,
+					gtk.MESSAGE_QUESTION,
+					gtk.BUTTONS_YES_NO,
+				"Are you sure you want to delete the %s profile?" % ssid )
+		res = dlg.run()
+		dlg.destroy()
+		del dlg
+		if res == gtk.RESPONSE_NO: return
+		# Remove it
+		confFile.remove_section( ssid )
+		if ssid in auto_profile_order: auto_profile_order.remove( ssid )
+		if access_points.has_key( ssid ): access_points.pop( ssid )
+		self.pstore.remove( selected_iter )
+
+		# Let's save our current state
+		self.save_auto_profile_order()
+
+	def connect_profile( self, widget, data=None ):
+		global access_points
+		#Spear add the line below @version 0.2.9
+		global auto_profile_order
+		global dhcp_not_get_ip
+		global check_window
+		
+		( store, selected_iter ) = self.plist.get_selection().get_selected()
+		if not selected_iter: return
+		key = ''
+		ssid	= store.get_value( selected_iter, 0 )
+		known	= store.get_value( selected_iter, 2 )
+		if not known:
+			if data != 'noconnect':
+				dlg = gtk.MessageDialog(
+					self.window,
+					gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_MODAL,
+					gtk.MESSAGE_QUESTION,
+					gtk.BUTTONS_YES_NO,
+					"This network does not have a profile configured.\n\nWould you like to create one now?" )
+				res = dlg.run()
+				dlg.destroy()
+				del dlg
+				if res == gtk.RESPONSE_NO: return
+			p = profile_dialog( self )
+			# get a blank profile from the dialog
+			profile = p.get_profile()
+			profile['ssid'] = ssid
+			p.set_profile( profile, True )
+			
+			#Spear add the lines below @version 0.1.0
+			p.channel.set_active( int(access_points[ ssid ]['channel']) )
+			p.wifi_expander.set_expanded( True )
+			if access_points[ ssid ]['mode'] == 'Ad-Hoc':
+				p.wifi_expander.set_label( WIFI_SET_IBSS )
+				p.mode.set_active( 1 )
+				p.mode.set_sensitive(False)
+			elif access_points[ ssid ]['mode'] == 'Master':
+				p.wifi_expander.set_label( WIFI_SET_BSS )
+				p.mode.set_active( 0 )
+				p.mode.set_sensitive(False)
+				p.channel.set_sensitive( False )
+			#Spear add end
+			
+			ok = p.run()
+			if ok:
+				profile = p.get_profile()
+				#Spear add the line below @version 0.2.0
+				profile['key_valid'] = False
+				#Speaer add the line below @version 0.2.0
+				profile['key_content'] = ''
+				profile['key_id'] = '0'
+				
+				set_profile_to_conf_file( profile )
+				# change the icon
+				self.pstore.set_value( selected_iter, 1, self.known_profile_icon )
+				# make it known
+				self.pstore.set_value( selected_iter, 2, 1 )
+				# update access_points by hank 20100628
+				access_points[ profile['ssid'] ]['known'] = True
+
+				# if it is not in the auto_profile_order add it
+				if not profile['ssid'] in auto_profile_order:
+					auto_profile_order.append( profile['ssid'] )
+				self.save_auto_profile_order()
+				p.destroy()
+			else:
+				p.destroy()
+				return
+
+		check_window = 40
+
+		if data != 'noconnect':
+			#Spear add the lines below @version 0.2.2
+			profile = get_profile_from_conf_file( ssid )
+			#print "connect_profile: profile['use_enc']: ", profile['use_enc']
+
+			if profile['use_enc'] == True:
+				access_points[ ssid ]['encrypted'] = True
+				
+				if profile['sec_type'] == WIFI_SECURITY[0]:
+					access_points[ ssid ]['wep_enabled'] = True
+				else:
+					if profile['sec_type'] == WIFI_SECURITY[1]:
+						access_points[ ssid ]['wep_enabled'] = False
+						access_points[ ssid ]['auth_version'] = 'WPA'
+						access_points[ ssid ]['auth_suite'] = 'PSK'
+					elif profile['sec_type'] == WIFI_SECURITY[2]:
+						access_points[ ssid ]['wep_enabled'] = False
+						access_points[ ssid ]['auth_version'] = 'WPA2'
+						access_points[ ssid ]['auth_suite'] = 'PSK'
+					
+					if profile['enc_type'] == WIFI_ENCRYPTION[0]:
+						access_points[ ssid ]['pairwise_cipher'] = 'TKIP'
+						access_points[ ssid ]['group_cipher'] = 'TKIP'
+					elif profile['enc_type'] == WIFI_ENCRYPTION[1]:
+						access_points[ ssid ]['pairwise_cipher'] = 'CCMP'
+						access_points[ ssid ]['group_cipher'] = 'CCMP'
+
+			#Spear add the lines below @version 0.0.9
+			if (access_points[ ssid ]['encrypted'] == True):
+				#let user enter key
+				
+				if (access_points[ ssid ]['wep_enabled'] == True):
+					key_info = 'WEP'
+				else:
+					key_info = access_points[ ssid ]['auth_version']
+			
+				p = key_dialog(self, key_info)
+				
+				if profile['key_valid'] == True:
+					#fake key
+					p.key_content.set_text('123456789')
+					p.key_content_confirm.set_text('987654321')
+					#p.key_content_confirm.set_sensitive(False)
+					p.key_content_confirm.grab_focus()
+					p.dialog.set_default_response(gtk.RESPONSE_OK)
+					
+				#Spear add the lines below @version 0.2.4
+				if access_points[ ssid ]['wep_enabled'] == True:
+					#show wep_key idx
+					info = gtk.Label( 'Key Index' )
+					p.key_table.attach( info, 0, 1, 3, 4 )
+					
+					p.key_id = gtk.combo_box_new_text()
+					p.key_table.attach( p.key_id, 1, 2, 3, 4 )
+					
+					key_idxs = ['1', '2', '3', '4']
+					for idx in key_idxs:
+						p.key_id.append_text( idx )
+						
+					#print "@@@ key_id: ", profile['key_id']
+					if profile['key_id'] == 0:
+						p.key_id.set_active( 1 )
+					else:
+						p.key_id.set_active( int(profile['key_id']) )
+
+				while True:
+					ok = p.run()
+					if ok == gtk.RESPONSE_OK:
+						if access_points[ ssid ]['wep_enabled'] == True:
+							key_id = str(p.key_id.get_active())
+							profile['key_id'] = key_id
+							set_profile_to_conf_file( profile )
+						else:
+							key_id = '0'
+	
+						if p.key_active == False:
+							profile['key_valid'] = True
+							break
+						elif p.key_active:
+							profile['key_valid'] = False
+							if p.get_key(key_info):
+								print "key ", p.key
+								key = p.key
+								break
+							else:
+								print p.faild_reason
+								dlg = gtk.MessageDialog(
+										self.window,
+										gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_MODAL,
+										gtk.MESSAGE_ERROR,
+										gtk.BUTTONS_OK,
+										p.faild_reason )
+								dlg.run()
+								dlg.destroy()
+								del dlg
+
+								continue
+					else:
+						p.destroy()
+						return
+
+				p.destroy()
+			else:
+				#not use encryption
+				key_id = 0
+			#Spear add end
+			
+			connect_status_window = status_window()
+			connect_status_window.run()
+
+			dhcp_not_get_ip = False
+			#Spear modified the lines below @version 0.2.3
+			if profile['key_valid'] == True:
+				if __debug__:
+					print "key content from profile: ", profile['key_content']
+					print "key id: ", key_id
+				connect_to_network( ssid, profile['key_content'], key_id, connect_status_window )
+			else:
+				#Spear add the line below @version 0.2.6
+				#(fix bug that if use no encryption, after connect,key_valid would be set to True)
+				if (access_points[ ssid ]['encrypted'] == True):
+					print "key content form user input: ", key
+					profile['key_valid'] = True
+					profile['key_content'] = key
+					set_profile_to_conf_file( profile )
+				connect_to_network( ssid, key, key_id, connect_status_window )
+
+			connect_status_window.destroy()
+			
+			#Spear add the lines below @version 0.2.9 to adjust auto profile order
+			#assign the nearest connected ssid highest priority
+			if ssid == auto_profile_order[0]:
+				#connected ssid already has highest priority
+				print ""
+			else:
+				if ssid in auto_profile_order:
+					auto_profile_order.remove( ssid )
+
+				auto_profile_order.reverse()
+				auto_profile_order.append(ssid)
+				auto_profile_order.reverse()
+				if __debug__:
+					print "current auto_profile: ", auto_profile_order
+				
+				# save it
+				apo = ','.join( auto_profile_order )
+				confFile.set( 'DEFAULT', 'auto_profile_order', apo )
+				fd = open( CONF_FILE, "w" )
+				confFile.write( fd )
+				fd.close()
+			#Spear add end
+
+	def disconnect_profile( self, widget, data=None ):
+		global check_window
+		global check_none_times
+
+		check_window = 40
+
+		disconnect_interface()
+
+		check_none_times = 0
+
+	def get_ssid_iter( self, ssid ):
+		piter = self.pstore.get_iter_first()
+		while piter:
+			# only if it's known
+			if self.pstore.get_value( piter, 0 ) == ssid: 
+				break
+			#Spear add the line below @version 0.2.9
+			else:
+				piter = self.pstore.iter_next(piter)
+		return piter
+
+	def save_auto_profile_order( self, widget = None, data = None, data2 = None ):
+		#Spear mask the lines below @version 0.2.9
+		# recreate the auto_profile_order
+		#auto_profile_order = []
+		#piter = self.pstore.get_iter_first()
+		#while piter:
+			# only if it's known
+			#if self.pstore.get_value( piter, 2 ) == 1:
+				#auto_profile_order.append( self.pstore.get_value( piter, 0 ) )
+			#piter = self.pstore.iter_next( piter )
+		#Spear mask end
+
+		# save it
+		print "save new order...."
+		apo = ','.join( auto_profile_order )
+		confFile.set( 'DEFAULT', 'auto_profile_order', apo )
+		#Spear mask the line below and add new ones @version 0.2.1
+		#confFile.write( open( CONF_FILE, "w" ) )
+		fd = open( CONF_FILE, "w" )
+		confFile.write( fd )
+		fd.close()
+		#Spear modify end
+
+###################################
+# the preferences dialog
+class preferences_dialog:
+	def __init__( self, parent ):
+		# set up the preferences window
+		global wifi_radar_icon
+		self.parent = parent
+		#Spear modify the lines below to add "OK" button on preferences dialog
+		#self.dialog = gtk.Dialog('WiFi Radar Preferences', self.parent.window,
+			#gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+			#( gtk.STOCK_CLOSE, True ) )
+
+		self.dialog = gtk.Dialog('WiFi Radar Preferences', self.parent.window,
+								gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+								( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OK, gtk.RESPONSE_OK ) )
+		#Spear mofify end
+								
+		icon = gtk.gdk.pixbuf_new_from_inline( len( wifi_radar_icon[0] ), wifi_radar_icon[0], False )
+		self.dialog.set_icon( icon )
+                self.dialog.set_resizable( True )
+                self.dialog.set_transient_for( self.parent.window )
+#		self.tooltips = gtk.Tooltips()
+
+		#
+		# set up preferences widgets
+		#
+
+		# auto detect wireless device
+		self.w_auto_detect = gtk.CheckButton("Auto-detect wireless device")
+		self.w_auto_detect.set_active(AUTO_DETECT)
+		self.w_auto_detect.connect("toggled", self.toggle_auto_detect)
+#		self.tooltips.set_tip(self.w_auto_detect, "Automatically select wireless device to configure")
+		self.dialog.vbox.pack_start(self.w_auto_detect, False, False, 5)
+		# network interface selecter
+		self.w_interface = gtk.combo_box_entry_new_text()
+		iwconfig_info = os.popen( IWCONFIG_COMMAND + " 2>&1", 'r' )
+		wireless_devices = [ (x[0:x.find(" ")]) for x in iwconfig_info if("802.11" in x)]
+		for device in wireless_devices:
+			if device != INTERFACE:
+				self.w_interface.append_text(device)
+		self.w_interface.prepend_text(INTERFACE)
+		self.w_interface.set_active(0)
+		self.w_interface_label = gtk.Label("Wireless device")
+		self.w_hbox1 = gtk.HBox(False, 0)
+		self.w_hbox1.pack_start(self.w_interface_label, False, False, 5)
+		self.w_hbox1.pack_start(self.w_interface, True, True, 0)
+		self.w_interface.set_sensitive(not AUTO_DETECT)
+		self.dialog.vbox.pack_start(self.w_hbox1, False, False, 5)
+		# scan timeout (spin button of integers from 1 to 100)
+#		self.time_in_seconds = gtk.Adjustment(SCAN_TIMEOUT,1,100,1,1,1)
+#		self.w_scan_timeout = gtk.SpinButton(self.time_in_seconds, 1, 0)
+#		self.w_scan_timeout.set_update_policy(gtk.UPDATE_IF_VALID)
+#		self.w_scan_timeout.set_numeric(True)
+#		self.w_scan_timeout.set_snap_to_ticks(True)
+#		self.w_scan_timeout.set_wrap(False)
+#		self.tooltips.set_tip(self.w_scan_timeout, "How long should WiFi Radar scan for access points?")
+#		self.w_scan_timeout_label = gtk.Label("Scan timeout (seconds)")
+#		self.w_hbox2 = gtk.HBox(False, 0)
+		#Spear mask the lines below off @version 0.2.6
+		#self.w_hbox2.pack_start(self.w_scan_timeout_label, False, False, 5)
+		#self.w_hbox2.pack_start(self.w_scan_timeout, True, True, 0)
+		#Spear mask end
+		
+#		self.dialog.vbox.pack_start(self.w_hbox2, False, False, 5)
+		
+		#Spear add the lines below @version 0.0.7
+		# Regions(slect domain)
+		self.wregions = gtk.combo_box_new_text()
+		for wregions in WIFI_REGIONS:
+			self.wregions.append_text( wregions )
+#		self.tooltips.set_tip(self.wregions, "select the region")
+		
+		self.region_label = gtk.Label("Region")
+		self.w_hbox3 = gtk.HBox(False, 0)
+		self.w_hbox3.pack_start(self.region_label, False, False, 5)
+		self.w_hbox3.pack_start(self.wregions, True, True, 0)
+		self.dialog.vbox.pack_start(self.w_hbox3, False, False, 5)
+		#Spear add end
+		
+		# speak up
+#		self.w_speak_up = gtk.CheckButton("Use speak-up")
+#		self.w_speak_up.set_active(SPEAK_UP)
+#		self.tooltips.set_tip(self.w_speak_up, "Should I speak up when connecting to a network? (If you have a speach command)")
+		#Spear mask the line below off @version 0.2.6
+		#self.dialog.vbox.pack_start(self.w_speak_up, False, False, 5)
+		# commit required
+#		self.w_commit_required = gtk.CheckButton("Commit required")
+#		self.w_commit_required.set_active(COMMIT_REQUIRED)
+#		self.tooltips.set_tip(self.w_commit_required, "Check this box if your card requires a \"commit\" command with iwconfig")
+		#Spear mask the line below off @version 0.2.6
+		#self.dialog.vbox.pack_start(self.w_commit_required, False, False, 5)
+		# ifup required
+#		self.w_ifup_required = gtk.CheckButton("Ifup required")
+#		self.w_ifup_required.set_active(IFUP_REQUIRED)
+#		self.tooltips.set_tip(self.w_ifup_required, "Check this box if your system requires the interface to be brought up first")
+		#Spear mask the line below off @version 0.2.6
+		#self.dialog.vbox.pack_start(self.w_ifup_required, False, False, 5)		
+	
+	def toggle_auto_detect(self, auto_detect_toggle, data=None):
+		self.w_interface.set_sensitive(not auto_detect_toggle.get_active())
+
+	def run(self):
+		self.dialog.show_all()
+		return self.dialog.run()
+
+	def destroy(self):
+		self.dialog.destroy()
+		del self.dialog
+
+
+
+###################################
+#Spear add the lines below @version 0.0.9 to add key entering dialog
+
+class key_dialog:
+	def __init__( self, parent, key_info ):
+		global wifi_radar_icon
+		self.parent = parent
+		self.key_active = False
+		self.dialog = gtk.Dialog('Wireless Network Connecting', self.parent.window,
+								gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+								( gtk.STOCK_CANCEL, gtk.RESPONSE_CANCEL, gtk.STOCK_OK, gtk.RESPONSE_OK ) )
+		icon = gtk.gdk.pixbuf_new_from_inline( len( wifi_radar_icon[0] ), wifi_radar_icon[0], False )
+		self.dialog.set_icon( icon )
+		self.dialog.set_resizable( False )
+		self.dialog.set_transient_for( self.parent.window )
+		#self.dialog.set_size_request( 400, 400 )
+		
+		key_table = gtk.Table( 4, 2, False )
+		key_table.set_row_spacings( 3 )
+		key_table.set_col_spacings( 3 )
+
+		# The encyption info label
+		label_text = 'Please enter key'
+		label_text2 = '(network use ' + key_info + " encryption)"
+		info1 = gtk.Label( label_text )
+		info2 = gtk.Label( label_text2 )
+		key_table.attach( info1, 0, 1, 0, 1 )
+		key_table.attach( info2, 1, 2, 0, 1 )
+		
+		# The key content textboxes
+		key_label = gtk.Label( "Key" )
+		key_table.attach( key_label, 0, 1, 1, 2 )
+		
+		self.key_content = gtk.Entry( 64 )
+		self.key_content.set_visibility(False)
+		key_table.attach( self.key_content, 1, 2, 1, 2 )
+		self.key_content.connect('focus-in-event', self.on_key_activate)
+	
+		# The key confirmation label
+		key_confim = gtk.Label( 'Confirmation' )
+		key_table.attach( key_confim, 0, 1, 2, 3 )
+		
+		# The key content confirm textboxes
+		self.key_content_confirm = gtk.Entry( 64 )
+		self.key_content_confirm.set_visibility(False)
+		key_table.attach( self.key_content_confirm, 1, 2, 2, 3 )
+		
+		# Add the key table to the dialog
+		self.dialog.vbox.pack_start( key_table, True, True, 5 )
+		#Spear add the line below @version 0.2.4
+		self.key_table = key_table
+
+	def on_key_activate( self, event, data ):
+		#print "key activate..."
+		self.key_content.set_text('')
+		self.key_content_confirm.set_text('')
+		self.key_content_confirm.set_sensitive(True)
+		self.key_active = True
+		
+	def run( self ):
+		self.dialog.show_all()
+		return self.dialog.run()
+
+	def destroy( self ):
+		self.dialog.destroy()
+		del self.dialog
+		
+	def get_key( self, key_info ):
+		key_content = self.key_content.get_text().strip()
+		key_confirm = self.key_content_confirm.get_text().strip()
+		if key_content != key_confirm:
+			self.faild_reason = "kyes do not match!"
+			return False
+		
+		key_len = len(key_content)
+		print "key length: ", key_len
+		print "key info: ", key_info
+		if key_info == 'WEP':
+			if(key_len != 5 and key_len != 13 and key_len != 10 and key_len != 26):
+				self.faild_reason = "WEP encryption needs 40 or 104 bits key, \
+													5 or 13 ASCII characters and 10 or 26 hex are permitted"
+				return False
+				
+			if(key_len == 10 or key_len == 26):
+				hex_wep_pattern = re.compile( "[^a-f0-9A-F]", re.I | re.M  | re.S )
+				if hex_wep_pattern.search( key_content ):
+					self.faild_reason = "WEP encryption needs 40 or 104 bits key, \
+												5 or 13 ASCII characters and 10 or 26 hex are permitted"
+					return False
+				
+		elif (key_info == 'WPA' or key_info == 'RSN'):
+			if(key_len < 8 or key_len > 64):
+				self.faild_reason = "WPA/RSN(WPA2) encryption needs 8~64 ASCII characters"
+				return False
+		
+		self.key = key_content
+		return True
+#Spear add end
+
+
+
+###################################
+class profile_dialog:
+	def __init__( self, parent ):
+		global wifi_radar_icon
+		self.parent = parent
+		self.dialog = gtk.Dialog('WiFi Profile', self.parent.window,
+								gtk.DIALOG_MODAL | gtk.DIALOG_DESTROY_WITH_PARENT,
+								( gtk.STOCK_CANCEL, False, gtk.STOCK_SAVE, True ) )
+		icon = gtk.gdk.pixbuf_new_from_inline( len( wifi_radar_icon[0] ), wifi_radar_icon[0], False )
+		self.dialog.set_icon( icon )
+		self.dialog.set_resizable( False )
+		self.dialog.set_transient_for( self.parent.window )
+		#self.dialog.set_size_request( 400, 400 )
+		ssid_table = gtk.Table( 1, 2, False )
+		ssid_table.set_row_spacings( 3 )
+		ssid_table.set_col_spacings( 3 )
+		#################
+		# The ssid labels
+		l = gtk.Label( 'Network Name' )
+		ssid_table.attach( l, 0, 1, 0, 1 )
+		# The ssid textboxes
+		self.ssid = gtk.Entry( 32 )
+		self.ssid.set_text('ssid')
+		ssid_table.attach( self.ssid, 1, 2, 0, 1 )
+		# Add the ssid table to the dialog
+		self.dialog.vbox.pack_start( ssid_table, True, True, 5 )
+
+
+		# create the wifi expander
+		self.wifi_expander = gtk.Expander( WIFI_SET_BSS )
+		wifi_table = gtk.Table( 4, 2, False )
+		wifi_table.set_row_spacings( 3 )
+		wifi_table.set_col_spacings( 3 )
+		# The Wifi labels
+		l = gtk.Label( 'Mode' )
+		wifi_table.attach( l, 0, 1, 0, 1 )
+	
+		l = gtk.Label( 'Channel' )
+		wifi_table.attach( l, 0, 1, 2, 3 )
+
+		# The Wifi text boxes
+		self.mode = gtk.combo_box_new_text()
+		for mode in WIFI_MODES:
+			self.mode.append_text( mode )
+		self.mode.set_active( 0 )
+		wifi_table.attach( self.mode, 1, 2, 0, 1 )
+		
+		self.channel = gtk.combo_box_new_text()
+		for channel in WIFI_CHANNELS:
+			self.channel.append_text( channel )
+		self.channel.set_active( 0 )
+		
+		#Spear mask the line below and add a new one @version 0.07
+		#wifi_table.attach( self.channel, 1, 2, 1, 2 )
+		wifi_table.attach( self.channel, 1, 2, 2, 3 )
+		
+		#Spear mask the line below @version 0.07
+		#self.key = gtk.Entry( 32 )
+		#self.key.set_text('0.0.0.0')
+		#wifi_table.attach( self.key, 1, 2, 2, 3 )
+		#self.security = gtk.combo_box_new_text()
+		#for security in WIFI_SECURITY:
+			#self.security.append_text( security )
+		#self.security.set_active( 0 )
+		#wifi_table.attach( self.security, 1, 2, 3, 4 )
+		#Spear mask end
+
+		# Add the wifi table to the expander
+		self.wifi_expander.add( wifi_table )
+		# Add the expander to the dialog
+		self.dialog.vbox.pack_start( self.wifi_expander, False, False, 5 )
+
+		# create the dhcp expander
+		self.dhcp_expander = gtk.Expander( USE_DHCP_LABEL )
+		self.dhcp_expander.connect( 'notify::expanded', self.toggle_use_dhcp )
+		ip_table = gtk.Table( 6, 2, False )
+		ip_table.set_row_spacings( 3 )
+		ip_table.set_col_spacings( 3 )
+		# The IP labels
+		l = gtk.Label( 'IP' )
+		ip_table.attach( l, 0, 1, 0, 1 )
+		l = gtk.Label( 'Netmask' )
+		ip_table.attach( l, 0, 1, 1, 2 )
+		l = gtk.Label( 'Gateway' )
+		ip_table.attach( l, 0, 1, 2, 3 )
+		
+		#Spear mask the lines below @version 0.2.6
+		#l = gtk.Label( 'Domain' )
+		#ip_table.attach( l, 0, 1, 3, 4 )
+		#Spear mask end
+		
+		l = gtk.Label( 'DNS' )
+		ip_table.attach( l, 0, 1, 4, 5 )
+		l = gtk.Label( 'DNS' )
+		ip_table.attach( l, 0, 1, 5, 6 )
+		# The IP text boxes
+		self.ip = gtk.Entry( 15 )
+		self.ip.set_text('0.0.0.0')
+		ip_table.attach( self.ip, 1, 2, 0, 1 )
+		self.netmask = gtk.Entry( 15 )
+		self.netmask.set_text('255.255.255.0')
+		ip_table.attach( self.netmask, 1, 2, 1, 2 )
+		self.gw = gtk.Entry( 15 )
+		self.gw.set_text('0.0.0.0')
+		ip_table.attach( self.gw, 1, 2, 2, 3 )
+		self.domain = gtk.Entry( 32 )
+		
+		#Spear mask the lines below @version 0.2.6
+		#self.domain.set_text('domain.com')
+		#ip_table.attach( self.domain, 1, 2, 3, 4 )
+		#Spear mask end
+
+		self.dns1 = gtk.Entry( 15 )
+		self.dns1.set_text('0.0.0.0')
+		ip_table.attach( self.dns1, 1, 2, 4, 5 )
+		self.dns2 = gtk.Entry( 15 )
+		self.dns2.set_text('0.0.0.0')
+		ip_table.attach( self.dns2, 1, 2, 5, 6 )
+		# Add the ip table to the expander
+		self.dhcp_expander.add( ip_table )
+		# Add the expander to the dialog
+		self.dialog.vbox.pack_start( self.dhcp_expander, False, False, 5 )
+
+		# create the postpre expander
+		self.postpre_expander = gtk.Expander( POSTPRE_LABEL )
+		pp_table = gtk.Table( 2, 2, False )
+		pp_table.set_row_spacings( 3 )
+		pp_table.set_col_spacings( 3 )
+		# The labels
+		l = gtk.Label( 'Before' )
+		pp_table.attach( l, 0, 1, 0, 1 )
+		l = gtk.Label( 'After' )
+		pp_table.attach( l, 0, 1, 1, 2 )
+		# The text boxes
+		self.prescript = gtk.Entry()
+		pp_table.attach( self.prescript, 1, 2, 0, 1 )
+		self.postscript = gtk.Entry()
+		pp_table.attach( self.postscript, 1, 2, 1, 2 )
+		# Add the pp table to the expander
+		self.postpre_expander.add( pp_table )
+		# Add the expander to the dialog
+		#Spear mask the line off @version 0.2.6 to hide the useless part
+		#self.dialog.vbox.pack_start( self.postpre_expander, False, False, 5 )
+
+	def run( self ):
+		self.dialog.show_all()
+		return self.dialog.run()
+
+	def destroy( self ):
+		self.dialog.destroy()
+		del self.dialog
+
+	def toggle_use_dhcp( self, widget, data = None ):
+		expanded = self.dhcp_expander.get_expanded()
+		if expanded:
+			self.dhcp_expander.set_label( USE_IP_LABEL )
+		else:
+			self.dhcp_expander.set_label( USE_DHCP_LABEL )
+
+
+	#Spear add the function @version 0.0.9
+	def toggle_bss_ibss( self, widget, data = None ):
+		expanded = self.wifi_expander.get_expanded()
+		if expanded:
+			self.wifi_expander.set_label( "Start IBSS" )
+			self.mode.set_active( 1 )
+			self.mode.set_sensitive(False)
+			self.channel.set_active( 1 )
+			
+			self.sec.remove_text(0)
+			self.sec.remove_text(0)
+			self.sec.remove_text(0)
+			self.sec.append_text( WIFI_SECURITY[0] )
+			self.sec.set_active( 0 )
+			self.enc.set_sensitive(False)
+		else:
+			self.wifi_expander.set_label( WIFI_SET_BSS )
+			self.mode.set_active( 0 )
+			self.mode.set_sensitive(True)
+			
+			idx = self.sec.get_active( )
+			self.sec.remove_text(0)
+			for sec in WIFI_SECURITY:
+				self.sec.append_text( sec )
+			self.sec.set_active( idx )
+			
+	#Spear add the function @version 0.2.2
+	def toggle_enc_mode( self, widget, data = None ):
+		expanded = self.enc_expander.get_expanded()
+		if expanded:
+			self.enc_expander.set_label( "Use Encryption" )
+			self.sec.set_active( 0 )
+		else:
+			self.enc_expander.set_label( "No Encryption" )
+			
+	def secure_type_changed( self, widget, data = None ):
+		if 0 == widget.get_active():
+			self.enc.set_sensitive( False )
+		else:
+			self.enc.set_sensitive( True )
+			if 1 == widget.get_active():
+				self.enc.set_active( 0 )
+			elif 2 == widget.get_active():
+				self.enc.set_active( 1 )
+
+	def get_profile( self ):
+		profile					= {}
+		profile['ssid']			= self.ssid.get_text().strip()
+		profile['domain']			= self.domain.get_text().strip()
+		profile['mode']			= self.get_array_item( self.mode.get_active(), WIFI_MODES )
+		profile['channel']		= self.get_array_item( self.channel.get_active(), WIFI_CHANNELS )
+		profile['protocol']		= 'b'
+		profile['signal']		= '0'
+		profile['prescript']	= self.prescript.get_text().strip()
+		profile['postscript']	= self.postscript.get_text().strip()
+		
+		# wpa
+		profile['use_wpa'] = True
+		profile['wpa_driver']= 'wext'
+		
+		# dhcp
+		use_dhcp 				= ( self.dhcp_expander.get_expanded() == False )
+		if use_dhcp:
+			profile['use_dhcp'] = True
+		else:
+			profile['use_dhcp'] = False
+			profile['ip']		= self.ip.get_text().strip()
+			profile['netmask']	= self.netmask.get_text().strip()
+			profile['gateway']	= self.gw.get_text().strip()
+			profile['domain']	= self.domain.get_text().strip()
+			profile['dns1']		= self.dns1.get_text().strip()
+			profile['dns2']		= self.dns2.get_text().strip()
+		return profile
+
+	def set_profile( self, profile, known ):
+		if __debug__:
+			print profile
+		self.ssid.set_text( profile['ssid'] )
+		if known:
+			self.ssid.set_editable( False )
+			self.dialog.set_title( "WiFi Profile for %s" % profile['ssid'] )
+			
+		#BSS/IBSS selection (Spear add the lines below @version 0.0.9)
+		if profile['mode'] == 'Ad-Hoc':
+			self.wifi_expander.set_expanded( True )
+		else:
+			self.wifi_expander.set_expanded( False )
+
+		self.mode.set_active( self.get_array_index( profile['mode'], WIFI_MODES ) )
+		self.channel.set_active( self.get_array_index( profile['channel'], WIFI_CHANNELS ) )
+		#Spear mask the line below @version 0.07
+		#self.security.set_active( self.get_array_index( profile['security'], WIFI_SECURITY ) )
+		#self.protocol.set_text( profile['protocol'] )
+		self.prescript.set_text( profile['prescript'] )
+		self.postscript.set_text( profile['postscript'] )
+
+		# dhcp
+		if profile['use_dhcp'] == True:
+			self.dhcp_expander.set_expanded( False)
+		else:
+			self.dhcp_expander.set_expanded( True )
+			self.ip.set_text( profile['ip'] )
+			self.netmask.set_text( profile['netmask']	)
+			self.gw.set_text( profile['gateway'] )
+			self.domain.set_text( profile['domain'] )
+			self.dns1.set_text( profile['dns1'] )
+			self.dns2.set_text( profile['dns2'] )
+
+	def get_array_index( self, item, array ):
+		try:
+			return array.index( item.strip() )
+		except:
+			pass
+		return 0
+
+	def get_array_item( self, index, array ):
+		try:
+			return array[ index ]
+		except:
+			pass
+		return ''
+
+### status_window
+###
+### A simple class for putting up a "Please wait" dialog so the user
+### doesn't think we've forgotten about them.
+class status_window:
+	def __init__( self ):
+		global wifi_radar_icon
+		self.dialog = gtk.Dialog(title="Working", flags=gtk.DIALOG_MODAL)
+	
+		icon = gtk.gdk.pixbuf_new_from_inline( len( wifi_radar_icon[0] ), wifi_radar_icon[0], False )
+		self.dialog.set_icon( icon )
+		self.lbl = gtk.Label("Please wait...")
+		self.bar = gtk.ProgressBar()
+		self.dialog.vbox.pack_start(self.lbl)
+		self.dialog.vbox.pack_start(self.bar)
+		self.dialog.connect("delete_event",self.inhibit_close)
+
+	def update_message( self, message ):
+		self.lbl.set_text(message)
+
+	def inhibit_close( self, widget, signal ):
+		return True
+
+	def update_window( self ):
+		# Do stuff
+		self.bar.pulse()
+		return True
+
+	def run( self ):
+		self.dialog.show_all()
+		self.timer = gobject.timeout_add(1000,self.update_window)
+		return
+
+	def destroy( self ):
+		gobject.source_remove(self.timer)
+		self.dialog.destroy()
+		del self.dialog
+
+
+####################################################################################################
+#allen add the function below @version 0.2.8 to search if wifi-radar is already running
+def find_process_by_name(name):
+	count = 0
+	cmd='ps aux|grep %s' %name
+	
+	for line in os.popen(cmd,'r').readlines():
+		if re.search("/usr/sbin/3dsp-wifi-radar",line) and re.search("python",line):
+			count+=1
+
+	if count>1:
+		print 'wifi-radar has being running!'
+		return True
+	else:
+		return False
+ 
+# Speaking up
+def	say( words ):
+	if not SPEAK_UP: return
+	words = words.replace( "\"", "\\\"" )
+	os.system( "%s \"%s\"" % ( SAY_COMMAND, words ) )
+	#os.spawnlp( os.P_WAIT, SAY_COMMAND, SAY_COMMAND, words )
+
+# Configure
+def configure():
+	global main_radar_window
+	global scanner
+	global lock
+	global prev_ssid
+	global check_times
+	global check_window
+	global check_value
+#add connecting_to_network, only one connect_to_network Call at a time
+	global connecting_to_network
+#add dhcp_not_get_ip, if ip can not be get by DHCP, not to get it again in future
+	global dhcp_not_get_ip
+
+	check_times = 0
+	check_value = 0
+	check_window = 0
+	connecting_to_network = False
+	dhcp_not_get_ip = False
+
+	main_radar_window = radar_window()
+	
+	#Spear add the line below @version 0.2.9 to show notification
+	prev_ssid = ''
+	
+	lock = threading.RLock()
+
+	#Spear add for test @08/11/27
+	print "starting dhcp thread...\n"
+	threading.Thread( None, dhcp_thread, None, ( lock, ) ).start()
+	time.sleep(0.3)
+
+	print "starting scanning thread...\n"
+	threading.Thread( None, scanning_thread, None, ( lock, ) ).start()
+	#wait scan results, otherwise connect_to_preferred think all APs are unavailable @version 0.2.9
+	time.sleep(4.8)
+	
+	gobject.timeout_add( 500, main_radar_window.update_plist_items )
+
+	#Spear add the lines below @version 0.2.9 to connect preferred aumatically
+	connect_to_preferred()
+	
+	main_radar_window.main()
+
+
+####################################################################################################
+# Initializers
+access_points		= {}
+auto_profile_order	= []
+lock				= None
+s					= None
+
+# First load our conf file and know profiles
+confFile			= ConfigParser.ConfigParser()
+if not os.path.isfile( CONF_FILE ):
+	# No config file exists, build one real quick
+	confFile.set("DEFAULT", "interface", INTERFACE )
+	confFile.set("DEFAULT", "scan_timeout", SCAN_TIMEOUT )
+	#Spear add the line below @version 0.0.7
+	confFile.set("DEFAULT", "domain", DEFAULT_REGION )
+	confFile.set("DEFAULT", "speak_up", SPEAK_UP )
+	confFile.set("DEFAULT", "commit_required", COMMIT_REQUIRED )
+	confFile.set("DEFAULT", "ifup_required", IFUP_REQUIRED )
+	confFile.set("DEFAULT", "auto_profile_order", '' )
+	#Spear mask the line below and add new ones @version 0.2.1
+	#confFile.write( open( CONF_FILE, "w" ) )
+	fd = open( CONF_FILE, "w" )
+	confFile.write( fd )
+	fd.close()
+	#Spear modify end
+else:
+	#Spear mask the line below and add new ones @version 0.2.1
+	#confFile.readfp( open( CONF_FILE ) )
+	fd = open( CONF_FILE)
+	confFile.readfp( fd )
+	#Spear modify end
+
+	print "read file:", CONF_FILE	
+
+	# Override the defaults
+	try: INTERFACE		= confFile.get			( "DEFAULT", "interface" )
+	except: confFile.set("DEFAULT", "interface", INTERFACE )
+	try: SCAN_TIMEOUT	= confFile.getint		( "DEFAULT", "scan_timeout" )
+	except: confFile.set("DEFAULT", "scan_timeout", SCAN_TIMEOUT )
+	#Spear add the lines below @version 0.0.7
+	try: DEFAULT_REGION	= confFile.get		( "DEFAULT", "domain" )
+	except: confFile.set("DEFAULT", "domain", DEFAULT_REGION )
+	print "Initialzers: domian is ", DEFAULT_REGION
+	#Spear add end
+	try: SPEAK_UP		= confFile.getboolean	( "DEFAULT", "speak_up" )
+	except: confFile.set("DEFAULT", "speak_up", SPEAK_UP )
+	try: COMMIT_REQUIRED= confFile.getboolean	( "DEFAULT", "commit_required" )
+	except: confFile.set("DEFAULT", "commit_required", COMMIT_REQUIRED )
+	try: IFUP_REQUIRED= confFile.getboolean	( "DEFAULT", "ifup_required" )
+	except: confFile.set("DEFAULT", "ifup_required", IFUP_REQUIRED )
+	try: auto_profile_order	= confFile.get	( "DEFAULT", "auto_profile_order" )
+	except: 
+		#Spear mask the line off and add new one @version 0.2.5 if wifi-radar.conf is empty
+		#confFile.set("DEFAULT", "auto_profile_order", auto_profile_order )
+		auto_profile_order = ''
+	# convert the auto_profile_order to a list for ordering
+	if auto_profile_order == '':
+		auto_profile_order = []
+	else:
+		auto_profile_order = auto_profile_order.split( ',' )
+	# First, we add our known profiles
+	for apname in confFile.sections():
+		ap = {}
+		# set the defaults
+		ap['known']		= True
+		ap['available']	= False
+		ap['encrypted'] = False
+		ap['mode']		= ''
+		ap['security']	= ''
+		ap['channel']	= ''
+		ap['protocol']	= 'g'
+		ap['signal']	= '0'
+		ap['prescript']	= ''
+		ap['postscript']= ''
+		# read the important values
+		if confFile.has_option( apname, 'key'):
+			if len( confFile.get( apname, 'key' ) ) > 0:
+				ap['encrypted'] = True
+		if confFile.has_option( apname, 'mode'):
+			apmode = confFile.get( apname, 'mode' )
+			if len( apmode ) > 0:
+				ap['mode'] = apmode
+		if confFile.has_option( apname, 'security'):
+			apsec = confFile.get( apname, 'security' )
+			if len( apsec ) > 0:
+				ap['security'] = apsec
+		if confFile.has_option( apname, 'channel'):
+			apchan = confFile.get( apname, 'channel' )
+			if len( apchan ) > 0:
+				ap['channel'] = apchan
+		if confFile.has_option( apname, 'protocol'):
+			approt = confFile.get( apname, 'protocol' )
+			if len( approt ) > 0:
+				ap['protocol'] = approt
+		access_points[ apname ] = ap
+		# if it is not in the auto_profile_order add it
+		if not apname in auto_profile_order:
+			auto_profile_order.append( apname )
+	#Spear add the line below @version 0.2.1
+	fd.close()
+	
+set_network_device(INTERFACE)
+(DHCP_COMMAND, DHCP_PIDFILE, DHCP_ARGS, DHCP_KILL_COMMAND) = configure_dhcp_client() 
+
+####################################################################################################
+# Embedded Images
+wifi_radar_icon = [ ""
+  "GdkP"
+  "\0\0\22""7"
+  "\2\1\0\2"
+  "\0\0\1\214"
+  "\0\0\0c"
+  "\0\0\0O"
+  "\377\377\377\377\0\377\377\377\377\0\377\377\377\377\0\377\377\377\377"
+  "\0\377\377\377\377\0\377\377\377\377\0\377\377\377\377\0\261\377\377"
+  "\377\0\7\0\0\0\10\0\0\0\25\0\0\0\35\0\0\0%\0\0\0-\0\0\0\"\0\0\0\11\327"
+  "\377\377\377\0\6\0\0\0\"\0\0\0_\0\0\0\213\0\0\0\266\0\0\0\341\0\0\0\376"
+  "\206\0\0\0\377\6\0\0\0\356\0\0\0\324\0\0\0\265\0\0\0~\0\0\0@\0\0\0\10"
+  "\315\377\377\377\0\4\0\0\0\2\0\0\0;\0\0\0\210\0\0\0\325\221\0\0\0\377"
+  "\4\0\0\0\371\0\0\0\303\0\0\0w\0\0\0\31\310\377\377\377\0\3\0\0\0\6\0"
+  "\0\0m\0\0\0\342\227\0\0\0\377\4\0\0\0\374\0\0\0\264\0\0\0Q\0\0\0\5\303"
+  "\377\377\377\0\3\0\0\0\4\0\0\0d\0\0\0\341\234\0\0\0\377\3\0\0\0\341\0"
+  "\0\0`\0\0\0\2\277\377\377\377\0\3\0\0\0\2\0\0\0[\0\0\0\333\240\0\0\0"
+  "\377\2\0\0\0\323\0\0\0K\274\377\377\377\0\3\0\0\0\1\0\0\0R\0\0\0\324"
+  "\244\0\0\0\377\2\0\0\0\276\0\0\0#\271\377\377\377\0\2\0\0\0\31\0\0\0"
+  "\277\247\0\0\0\377\2\0\0\0\363\0\0\0c\267\377\377\377\0\2\0\0\0/\0\0"
+  "\0\343\252\0\0\0\377\2\0\0\0\257\0\0\0\24\264\377\377\377\0\2\0\0\0M"
+  "\0\0\0\363\220\0\0\0\377\14\0\0\0\357\0\0\0\304\0\0\0\230\0\0\0v\0\0"
+  "\0l\0\0\0c\0\0\0[\0\0\0j\0\0\0\205\0\0\0\240\0\0\0\311\0\0\0\373\220"
+  "\0\0\0\377\2\0\0\0\346\0\0\0""4\262\377\377\377\0\2\0\0\0q\0\0\0\375"
+  "\215\0\0\0\377\4\0\0\0\373\0\0\0\300\0\0\0t\0\0\0)\213\377\377\377\0"
+  "\4\0\0\0\14\0\0\0E\0\0\0\205\0\0\0\334\216\0\0\0\377\2\0\0\0\363\0\0"
+  "\0D\257\377\377\377\0\2\0\0\0\4\0\0\0\230\215\0\0\0\377\3\0\0\0\372\0"
+  "\0\0\231\0\0\0\34\221\377\377\377\0\4\0\0\0\1\0\0\0C\0\0\0\251\0\0\0"
+  "\372\214\0\0\0\377\2\0\0\0\371\0\0\0W\255\377\377\377\0\2\0\0\0\17\0"
+  "\0\0\272\214\0\0\0\377\3\0\0\0\375\0\0\0\241\0\0\0\"\226\377\377\377"
+  "\0\2\0\0\0\"\0\0\0\252\214\0\0\0\377\2\0\0\0\375\0\0\0k\253\377\377\377"
+  "\0\2\0\0\0\25\0\0\0\324\213\0\0\0\377\3\0\0\0\376\0\0\0\252\0\0\0(\232"
+  "\377\377\377\0\2\0\0\0""9\0\0\0\312\214\0\0\0\377\1\0\0\0\200\251\377"
+  "\377\377\0\2\0\0\0\5\0\0\0\303\213\0\0\0\377\2\0\0\0\332\0\0\0""1\235"
+  "\377\377\377\0\3\0\0\0\4\0\0\0\201\0\0\0\374\213\0\0\0\377\1\0\0\0p\250"
+  "\377\377\377\0\1\0\0\0\222\213\0\0\0\377\2\0\0\0\301\0\0\0\22\240\377"
+  "\377\377\0\2\0\0\0:\0\0\0\336\212\0\0\0\377\2\0\0\0\374\0\0\0I\246\377"
+  "\377\377\0\1\0\0\0[\213\0\0\0\377\2\0\0\0\241\0\0\0\6\212\377\377\377"
+  "\0\15\0\0\0\2\0\0\0&\0\0\0U\0\0\0\203\0\0\0\242\0\0\0\243\0\0\0\234\0"
+  "\0\0\225\0\0\0\215\0\0\0\206\0\0\0}\0\0\0\\\0\0\0!\213\377\377\377\0"
+  "\2\0\0\0\22\0\0\0\307\212\0\0\0\377\2\0\0\0\361\0\0\0+\244\377\377\377"
+  "\0\2\0\0\0.\0\0\0\365\211\0\0\0\377\2\0\0\0\376\0\0\0|\211\377\377\377"
+  "\0\4\0\0\0#\0\0\0d\0\0\0\223\0\0\0\277\214\0\0\0\310\4\0\0\0\253\0\0"
+  "\0l\0\0\0-\0\0\0\2\210\377\377\377\0\2\0\0\0\12\0\0\0\267\212\0\0\0\377"
+  "\2\0\0\0\336\0\0\0\24\242\377\377\377\0\2\0\0\0\20\0\0\0\334\211\0\0"
+  "\0\377\2\0\0\0\367\0\0\0W\210\377\377\377\0\2\0\0\0#\0\0\0\211\223\0"
+  "\0\0\310\3\0\0\0\266\0\0\0t\0\0\0\27\207\377\377\377\0\2\0\0\0\5\0\0"
+  "\0\244\212\0\0\0\377\2\0\0\0\302\0\0\0\6\240\377\377\377\0\2\0\0\0\1"
+  "\0\0\0\264\211\0\0\0\377\2\0\0\0\363\0\0\0""9\207\377\377\377\0\3\0\0"
+  "\0\34\0\0\0\201\0\0\0\306\226\0\0\0\310\3\0\0\0\277\0\0\0Y\0\0\0\2\206"
+  "\377\377\377\0\2\0\0\0\1\0\0\0\217\212\0\0\0\377\1\0\0\0\203\240\377"
+  "\377\377\0\1\0\0\0\177\212\0\0\0\377\1\0\0\0T\206\377\377\377\0\3\0\0"
+  "\0\25\0\0\0z\0\0\0\305\232\0\0\0\310\2\0\0\0\242\0\0\0*\207\377\377\377"
+  "\0\1\0\0\0\243\211\0\0\0\377\2\0\0\0\372\0\0\0,\236\377\377\377\0\2\0"
+  "\0\0D\0\0\0\375\211\0\0\0\377\1\0\0\0\213\206\377\377\377\0\2\0\0\0""8"
+  "\0\0\0\274\235\0\0\0\310\3\0\0\0\306\0\0\0u\0\0\0\14\205\377\377\377"
+  "\0\2\0\0\0\7\0\0\0\306\211\0\0\0\377\2\0\0\0\306\0\0\0\2\234\377\377"
+  "\377\0\2\0\0\0\4\0\0\0\331\211\0\0\0\377\2\0\0\0\276\0\0\0\3\205\377"
+  "\377\377\0\2\0\0\0T\0\0\0\306\214\0\0\0\310\10\0\0\0\260\0\0\0\202\0"
+  "\0\0v\0\0\0~\0\0\0\207\0\0\0\217\0\0\0\227\0\0\0\264\214\0\0\0\310\2"
+  "\0\0\0\264\0\0\0""2\205\377\377\377\0\2\0\0\0\27\0\0\0\341\211\0\0\0"
+  "\377\1\0\0\0k\234\377\377\377\0\1\0\0\0c\211\0\0\0\377\2\0\0\0\343\0"
+  "\0\0\26\204\377\377\377\0\2\0\0\0\2\0\0\0s\212\0\0\0\310\4\0\0\0\265"
+  "\0\0\0s\0\0\0D\0\0\0\26\207\377\377\377\0\4\0\0\0\1\0\0\0+\0\0\0j\0\0"
+  "\0\250\212\0\0\0\310\2\0\0\0\303\0\0\0A\205\377\377\377\0\2\0\0\0/\0"
+  "\0\0\364\210\0\0\0\377\2\0\0\0\362\0\0\0\33\232\377\377\377\0\2\0\0\0"
+  "\7\0\0\0\341\210\0\0\0\377\2\0\0\0\371\0\0\0""7\204\377\377\377\0\2\0"
+  "\0\0\12\0\0\0\217\211\0\0\0\310\3\0\0\0\271\0\0\0]\0\0\0\10\216\377\377"
+  "\377\0\3\0\0\0\36\0\0\0t\0\0\0\306\210\0\0\0\310\2\0\0\0\306\0\0\0P\205"
+  "\377\377\377\0\1\0\0\0a\211\0\0\0\377\1\0\0\0\257\232\377\377\377\0\1"
+  "\0\0\0n\211\0\0\0\377\1\0\0\0h\204\377\377\377\0\2\0\0\0\20\0\0\0\245"
+  "\210\0\0\0\310\3\0\0\0\274\0\0\0c\0\0\0\12\222\377\377\377\0\2\0\0\0"
+  "*\0\0\0\242\211\0\0\0\310\1\0\0\0`\205\377\377\377\0\1\0\0\0\276\211"
+  "\0\0\0\377\1\0\0\0:\230\377\377\377\0\2\0\0\0\13\0\0\0\350\210\0\0\0"
+  "\377\1\0\0\0\250\204\377\377\377\0\2\0\0\0\3\0\0\0\230\210\0\0\0\310"
+  "\2\0\0\0\213\0\0\0\15\225\377\377\377\0\3\0\0\0\2\0\0\0Z\0\0\0\277\210"
+  "\0\0\0\310\1\0\0\0U\204\377\377\377\0\2\0\0\0%\0\0\0\370\210\0\0\0\377"
+  "\1\0\0\0\265\230\377\377\377\0\1\0\0\0y\210\0\0\0\377\2\0\0\0\372\0\0"
+  "\0\40\204\377\377\377\0\1\0\0\0o\210\0\0\0\310\2\0\0\0o\0\0\0\2\230\377"
+  "\377\377\0\2\0\0\0\30\0\0\0\226\207\0\0\0\310\2\0\0\0\306\0\0\0""7\204"
+  "\377\377\377\0\1\0\0\0|\211\0\0\0\377\1\0\0\0""0\226\377\377\377\0\2"
+  "\0\0\0\20\0\0\0\356\210\0\0\0\377\1\0\0\0\226\204\377\377\377\0\1\0\0"
+  "\0C\207\0\0\0\310\2\0\0\0\305\0\0\0R\233\377\377\377\0\2\0\0\0\5\0\0"
+  "\0\210\207\0\0\0\310\2\0\0\0\273\0\0\0\37\203\377\377\377\0\2\0\0\0\6"
+  "\0\0\0\325\210\0\0\0\377\1\0\0\0\251\226\377\377\377\0\1\0\0\0\204\210"
+  "\0\0\0\377\2\0\0\0\366\0\0\0\32\203\377\377\377\0\2\0\0\0!\0\0\0\277"
+  "\206\0\0\0\310\2\0\0\0\275\0\0\0""8\235\377\377\377\0\2\0\0\0\2\0\0\0"
+  "|\207\0\0\0\310\2\0\0\0\254\0\0\0\15\203\377\377\377\0\1\0\0\0J\210\0"
+  "\0\0\377\2\0\0\0\375\0\0\0&\224\377\377\377\0\2\0\0\0\26\0\0\0\364\210"
+  "\0\0\0\377\1\0\0\0\214\203\377\377\377\0\2\0\0\0\12\0\0\0\251\206\0\0"
+  "\0\310\2\0\0\0\305\0\0\0""0\240\377\377\377\0\1\0\0\0r\207\0\0\0\310"
+  "\1\0\0\0[\204\377\377\377\0\1\0\0\0\317\210\0\0\0\377\1\0\0\0\236\224"
+  "\377\377\377\0\1\0\0\0\204\210\0\0\0\377\2\0\0\0\362\0\0\0\24\203\377"
+  "\377\377\0\1\0\0\0\206\207\0\0\0\310\1\0\0\0X\214\377\377\377\0\11\0"
+  "\0\0\5\0\0\0$\0\0\0G\0\0\0X\0\0\0T\0\0\0O\0\0\0K\0\0\0B\0\0\0\35\214"
+  "\377\377\377\0\2\0\0\0\2\0\0\0\214\206\0\0\0\310\2\0\0\0\307\0\0\0""1"
+  "\203\377\377\377\0\1\0\0\0V\210\0\0\0\377\2\0\0\0\372\0\0\0\27\223\377"
+  "\377\377\0\1\0\0\0\271\210\0\0\0\377\1\0\0\0\202\203\377\377\377\0\1"
+  "\0\0\0@\207\0\0\0\310\1\0\0\0\204\212\377\377\377\0\4\0\0\0\7\0\0\0E"
+  "\0\0\0u\0\0\0\222\210\0\0\0\226\4\0\0\0\204\0\0\0T\0\0\0$\0\0\0\1\211"
+  "\377\377\377\0\2\0\0\0\12\0\0\0\245\206\0\0\0\310\2\0\0\0\251\0\0\0\5"
+  "\202\377\377\377\0\2\0\0\0\2\0\0\0\331\210\0\0\0\377\1\0\0\0C\223\377"
+  "\377\377\0\1\0\0\0\342\207\0\0\0\377\2\0\0\0\356\0\0\0\17\202\377\377"
+  "\377\0\2\0\0\0\2\0\0\0\246\206\0\0\0\310\2\0\0\0\246\0\0\0\11\210\377"
+  "\377\377\0\3\0\0\0\5\0\0\0D\0\0\0\212\216\0\0\0\226\2\0\0\0z\0\0\0\40"
+  "\211\377\377\377\0\2\0\0\0\32\0\0\0\274\206\0\0\0\310\1\0\0\0d\203\377"
+  "\377\377\0\1\0\0\0a\210\0\0\0\377\1\0\0\0b\222\377\377\377\0\2\0\0\0"
+  "\10\0\0\0\375\207\0\0\0\377\1\0\0\0x\203\377\377\377\0\1\0\0\0G\206\0"
+  "\0\0\310\2\0\0\0\275\0\0\0\36\210\377\377\377\0\2\0\0\0""3\0\0\0\207"
+  "\221\0\0\0\226\3\0\0\0\225\0\0\0X\0\0\0\11\210\377\377\377\0\1\0\0\0"
+  "R\206\0\0\0\310\2\0\0\0\302\0\0\0\23\202\377\377\377\0\2\0\0\0\5\0\0"
+  "\0\342\207\0\0\0\377\1\0\0\0\201\223\377\377\377\0\1\0\0\0m\206\0\0\0"
+  "\377\2\0\0\0\321\0\0\0\12\202\377\377\377\0\2\0\0\0\3\0\0\0\254\206\0"
+  "\0\0\310\1\0\0\0J\207\377\377\377\0\2\0\0\0\1\0\0\0O\210\0\0\0\226\1"
+  "\0\0\0\206\202\0\0\0h\3\0\0\0m\0\0\0s\0\0\0\214\207\0\0\0\226\2\0\0\0"
+  "\210\0\0\0)\207\377\377\377\0\2\0\0\0\1\0\0\0\233\206\0\0\0\310\1\0\0"
+  "\0l\203\377\377\377\0\2\0\0\0P\0\0\0\374\205\0\0\0\377\2\0\0\0\337\0"
+  "\0\0\"\224\377\377\377\0\1\0\0\0s\204\0\0\0\377\2\0\0\0\315\0\0\0\23"
+  "\203\377\377\377\0\1\0\0\0N\206\0\0\0\310\2\0\0\0\245\0\0\0\2\206\377"
+  "\377\377\0\2\0\0\0\6\0\0\0f\206\0\0\0\226\3\0\0\0w\0\0\0""7\0\0\0\23"
+  "\205\377\377\377\0\4\0\0\0\3\0\0\0*\0\0\0[\0\0\0\212\205\0\0\0\226\2"
+  "\0\0\0\222\0\0\0*\207\377\377\377\0\2\0\0\0#\0\0\0\304\205\0\0\0\310"
+  "\2\0\0\0\277\0\0\0\16\203\377\377\377\0\2\0\0\0]\0\0\0\376\203\0\0\0"
+  "\377\2\0\0\0\332\0\0\0\35\226\377\377\377\0\5\0\0\0;\0\0\0j\0\0\0\223"
+  "\0\0\0\244\0\0\0\20\203\377\377\377\0\2\0\0\0\5\0\0\0\260\206\0\0\0\310"
+  "\1\0\0\0>\206\377\377\377\0\2\0\0\0\14\0\0\0z\205\0\0\0\226\2\0\0\0|"
+  "\0\0\0/\213\377\377\377\0\3\0\0\0\10\0\0\0U\0\0\0\224\204\0\0\0\226\2"
+  "\0\0\0\221\0\0\0%\207\377\377\377\0\1\0\0\0s\206\0\0\0\310\1\0\0\0d\204"
+  "\377\377\377\0\5\0\0\0a\0\0\0\240\0\0\0\177\0\0\0]\0\0\0\26\237\377\377"
+  "\377\0\1\0\0\0U\206\0\0\0\310\1\0\0\0\235\206\377\377\377\0\2\0\0\0\2"
+  "\0\0\0r\204\0\0\0\226\3\0\0\0\225\0\0\0J\0\0\0\1\216\377\377\377\0\2"
+  "\0\0\0\35\0\0\0w\204\0\0\0\226\2\0\0\0\217\0\0\0\40\206\377\377\377\0"
+  "\2\0\0\0\27\0\0\0\304\205\0\0\0\310\2\0\0\0\273\0\0\0\12\247\377\377"
+  "\377\0\1\0\0\0\236\206\0\0\0\310\1\0\0\0""5\206\377\377\377\0\1\0\0\0"
+  "T\204\0\0\0\226\2\0\0\0\221\0\0\0""3\221\377\377\377\0\2\0\0\0\4\0\0"
+  "\0l\204\0\0\0\226\2\0\0\0\215\0\0\0\34\206\377\377\377\0\1\0\0\0}\206"
+  "\0\0\0\310\1\0\0\0E\247\377\377\377\0\1\0\0\0\276\205\0\0\0\310\1\0\0"
+  "\0\224\206\377\377\377\0\1\0\0\0""4\204\0\0\0\226\2\0\0\0\214\0\0\0\40"
+  "\223\377\377\377\0\2\0\0\0\5\0\0\0q\204\0\0\0\226\2\0\0\0\211\0\0\0\14"
+  "\205\377\377\377\0\2\0\0\0\37\0\0\0\306\205\0\0\0\310\1\0\0\0`\246\377"
+  "\377\377\0\2\0\0\0\12\0\0\0\277\205\0\0\0\310\1\0\0\0+\205\377\377\377"
+  "\0\2\0\0\0\30\0\0\0\220\203\0\0\0\226\2\0\0\0\225\0\0\0*\225\377\377"
+  "\377\0\2\0\0\0\10\0\0\0v\204\0\0\0\226\1\0\0\0X\206\377\377\377\0\1\0"
+  "\0\0\207\205\0\0\0\310\1\0\0\0m\247\377\377\377\0\2\0\0\0""3\0\0\0\301"
+  "\203\0\0\0\310\1\0\0\0[\206\377\377\377\0\1\0\0\0n\204\0\0\0\226\1\0"
+  "\0\0G\227\377\377\377\0\2\0\0\0\12\0\0\0z\203\0\0\0\226\2\0\0\0\224\0"
+  "\0\0\27\205\377\377\377\0\2\0\0\0\20\0\0\0\246\203\0\0\0\310\2\0\0\0"
+  "\224\0\0\0\11\250\377\377\377\0\4\0\0\0,\0\0\0h\0\0\0\210\0\0\0R\206"
+  "\377\377\377\0\1\0\0\0&\204\0\0\0\226\2\0\0\0f\0\0\0\1\230\377\377\377"
+  "\0\2\0\0\0\26\0\0\0\224\203\0\0\0\226\1\0\0\0g\206\377\377\377\0\5\0"
+  "\0\0\22\0\0\0\206\0\0\0y\0\0\0]\0\0\0\6\263\377\377\377\0\1\0\0\0t\203"
+  "\0\0\0\226\2\0\0\0\216\0\0\0\13\232\377\377\377\0\1\0\0\0X\204\0\0\0"
+  "\226\1\0\0\0#\274\377\377\377\0\1\0\0\0-\204\0\0\0\226\1\0\0\0K\233\377"
+  "\377\377\0\2\0\0\0\15\0\0\0\217\203\0\0\0\226\1\0\0\0v\274\377\377\377"
+  "\0\1\0\0\0t\203\0\0\0\226\2\0\0\0\213\0\0\0\10\213\377\377\377\0\5\0"
+  "\0\0\5\0\0\0\30\0\0\0\40\0\0\0\36\0\0\0\22\214\377\377\377\0\1\0\0\0"
+  "J\204\0\0\0\226\1\0\0\0*\273\377\377\377\0\1\0\0\0`\203\0\0\0\226\1\0"
+  "\0\0E\212\377\377\377\0\3\0\0\0\13\0\0\0@\0\0\0Y\204\0\0\0Z\3\0\0\0Q"
+  "\0\0\0""1\0\0\0\5\211\377\377\377\0\2\0\0\0\6\0\0\0\207\203\0\0\0\226"
+  "\1\0\0\0\26\273\377\377\377\0\5\0\0\0""1\0\0\0\226\0\0\0\224\0\0\0n\0"
+  "\0\0\5\211\377\377\377\0\2\0\0\0$\0\0\0U\202\0\0\0Z\4\0\0\0P\0\0\0E\0"
+  "\0\0I\0\0\0X\202\0\0\0Z\2\0\0\0P\0\0\0\33\211\377\377\377\0\4\0\0\0""3"
+  "\0\0\0\206\0\0\0\226\0\0\0\201\274\377\377\377\0\3\0\0\0\6\0\0\0""8\0"
+  "\0\0\13\211\377\377\377\0\2\0\0\0\7\0\0\0A\202\0\0\0Z\2\0\0\0I\0\0\0"
+  "\20\203\377\377\377\0\6\0\0\0\4\0\0\0\37\0\0\0O\0\0\0Z\0\0\0Y\0\0\0\36"
+  "\212\377\377\377\0\2\0\0\0\34\0\0\0)\310\377\377\377\0\5\0\0\0<\0\0\0"
+  "Z\0\0\0Y\0\0\0.\0\0\0\2\206\377\377\377\0\5\0\0\0\3\0\0\0;\0\0\0Z\0\0"
+  "\0X\0\0\0\32\322\377\377\377\0\1\0\0\0\34\202\0\0\0Z\1\0\0\0\30\211\377"
+  "\377\377\0\5\0\0\0\1\0\0\0>\0\0\0Z\0\0\0W\0\0\0\13\320\377\377\377\0"
+  "\4\0\0\0\5\0\0\0P\0\0\0Z\0\0\0""5\213\377\377\377\0\4\0\0\0\2\0\0\0H"
+  "\0\0\0Z\0\0\0:\320\377\377\377\0\4\0\0\0""4\0\0\0Z\0\0\0P\0\0\0\5\214"
+  "\377\377\377\0\1\0\0\0\26\202\0\0\0Z\1\0\0\0\22\317\377\377\377\0\3\0"
+  "\0\0+\0\0\0X\0\0\0\33\216\377\377\377\0\3\0\0\0>\0\0\0I\0\0\0\23\320"
+  "\377\377\377\0\1\0\0\0\12\217\377\377\377\0\2\0\0\0\6\0\0\0\1\377\377"
+  "\377\377\0\377\377\377\377\0\377\377\377\377\0\377\377\377\377\0\377"
+  "\377\377\377\0\377\377\377\377\0\377\377\377\377\0\377\377\377\377\0"
+  "\377\377\377\377\0\377\377\377\377\0\377\377\377\377\0\234\377\377\377"
+  "\0"]
+
+known_profile_icon = [ ""
+  "GdkP"
+  "\0\0\5""0"
+  "\2\1\0\2"
+  "\0\0\0P"
+  "\0\0\0\24"
+  "\0\0\0\24"
+  "\210\0\0\0\0\4\0\0\0\3\0\0\0\16\0\0\0\23\0\0\0\11\216\0\0\0\0\11\0\0"
+  "\0\16\0\0\0h\0\0\0\301\0\0\0\345\0\0\0\352\0\0\0\331\0\0\0\237\0\0\0"
+  "9\0\0\0\3\212\0\0\0\0\13\0\0\0@\0\0\0\323\0\0\0\376\0\0\0\350\0\0\0\304"
+  "\0\0\0\271\0\0\0\323\0\0\0\367\0\0\0\370\0\0\0\227\0\0\0\17\210\0\0\0"
+  "\0\15\0\0\0K\0\0\0\354\0\0\0\365\0\0\0\206\0\0\0#\0\0\0\6\0\0\0\3\0\0"
+  "\0\15\0\0\0C\0\0\0\304\0\0\0\376\0\0\0\260\0\0\0\22\206\0\0\0\0\17\0"
+  "\0\0""2\0\0\0\346\0\0\0\351\0\0\0L\0\0\0#\0\0\0u\0\0\0\246\0\0\0\257"
+  "\0\0\0\223\0\0\0M\0\0\0\27\0\0\0\235\0\0\0\375\0\0\0\242\0\0\0\7\204"
+  "\0\0\0\0\20\0\0\0\13\0\0\0\300\0\0\0\372\0\0\0W\0\0\0O\0\0\0\271\0\0"
+  "\0\233\0\0\0b\0\0\0V\0\0\0z\0\0\0\267\0\0\0\223\0\0\0$\0\0\0\267\0\0"
+  "\0\374\0\0\0X\204\0\0\0\0\7\0\0\0S\0\0\0\374\0\0\0\240\0\0\0H\0\0\0\275"
+  "\0\0\0a\0\0\0\12\202\0\0\0\0\10\0\0\0\1\0\0\0%\0\0\0\240\0\0\0\241\0"
+  "\0\0""9\0\0\0\352\0\0\0\320\0\0\0\12\203\0\0\0\0\21\0\0\0\262\0\0\0\351"
+  "\0\0\0A\0\0\0\272\0\0\0g\0\0\0\6\0\0\0""4\0\0\0e\0\0\0l\0\0\0T\0\0\0"
+  "\25\0\0\0\27\0\0\0\251\0\0\0v\0\0\0\214\0\0\0\367\0\0\0<\203\0\0\0\0"
+  "\21\0\0\0""6\0\0\0G\0\0\0r\0\0\0\244\0\0\0\17\0\0\0P\0\0\0b\0\0\0#\0"
+  "\0\0\27\0\0\0;\0\0\0s\0\0\0\33\0\0\0E\0\0\0\270\0\0\0""6\0\0\0\\\0\0"
+  "\0\15\205\0\0\0\0\15\0\0\0T\0\0\0""8\0\0\0""0\0\0\0f\0\0\0\6\0\0\0\0"
+  "\0\0\0\1\0\0\0\0\0\0\0(\0\0\0l\0\0\0\13\0\0\0k\0\0\0\33\206\0\0\0\0\16"
+  "***;\210\210\210\356\223\223\223\377iii\377\204\204\204\377\216\216\216"
+  "\377~~~\377zzz\377\203\203\203\377\215\215\215\377ddd\377\202\202\202"
+  "\377xxx\356\40\40\40;\205\0\0\0\0\2&&&#\251\251\251\353\202\374\374\374"
+  "\377\202\372\372\372\377\5\335\335\335\377\353\353\353\377\366\366\366"
+  "\377\327\327\327\377\357\357\357\377\202\365\365\365\377\3\362\362\362"
+  "\377\226\226\226\353\27\27\27)\204\0\0\0\0\21,,,p\354\354\354\377\355"
+  "\355\355\377\351\351\351\377\346\346\346\377\342\342\342\377\335\335"
+  "\335\377\334\334\334\377\330\330\330\377\324\324\324\377\320\320\320"
+  "\377\316\316\316\377\313\313\313\377\307\307\307\377\314\314\314\377"
+  "\35\35\35y\0\0\0\1\202\0\0\0\0\14\0\0\0\2(((\203\357\357\357\377\345"
+  "\345\345\377\341\341\341\377\337\337\337\377\333\333\333\377\326\326"
+  "\326\377\322\322\322\377\316\316\316\377\312\312\312\377\306\306\306"
+  "\377\202\302\302\302\377\30\314\314\314\377\311\311\311\377\33\33\33"
+  "\204\0\0\0\5\0\0\0\1\0\0\0\2\0\0\0\10&&&\210\356\356\356\377\342\342"
+  "\342\377\347\347\347\377\346\346\346\377\324GG\377\337\337\337\377\324"
+  "GG\377\333\322\322\377\324GG\377<\341@\377\324GG\377<\341@\377\321\321"
+  "\321\377\276\276\276\377\27\27\27\214\0\0\0\15\202\0\0\0\4+\0\0\0\21"
+  "$$$\221\355\355\355\377\345\345\345\377\344\344\344\377\340\340\340\377"
+  "\334\334\334\377\331\331\331\377\325\325\325\377\321\321\321\377\316"
+  "\316\316\377\312\312\312\377\306\306\306\377\307\307\307\377\313\313"
+  "\313\377\272\272\272\377\24\24\24\226\0\0\0\30\0\0\0\10\0\0\0\5\0\0\0"
+  "\27\"\"\"\231\354\354\354\377\346\346\346\377\342\342\342\377\337\337"
+  "\337\377\333\333\333\377\327\327\327\377\324\324\324\377\320\320\320"
+  "\377\314\314\314\377\310\310\310\377\305\305\305\377\301\301\301\377"
+  "\276\276\276\377\271\271\271\377\23\23\23\235\0\0\0\35\0\0\0\10\0\0\0"
+  "\4\0\0\0\32\40\40\40\223\310\310\310\376\202\274\274\274\377\4\272\272"
+  "\272\377\271\271\271\377\270\270\270\377\267\267\267\377\202\271\271"
+  "\271\377\16\270\270\270\377\266\266\266\377\265\265\265\377\264\264\264"
+  "\377\231\231\231\376\16\16\16\240\0\0\0\35\0\0\0\6\0\0\0\2\0\0\0\12\0"
+  "\0\0/\0\0\0n\0\0\0|\0\0\0\177\202\0\0\0\200\202\0\0\0\201\1\0\0\0\203"
+  "\204\0\0\0\205\12\0\0\0\201\0\0\0y\0\0\0<\0\0\0\15\0\0\0\2\0\0\0\0\0"
+  "\0\0\2\0\0\0\6\0\0\0\14\0\0\0\20\204\0\0\0\24\202\0\0\0\25\203\0\0\0"
+  "\26\6\0\0\0\25\0\0\0\22\0\0\0\15\0\0\0\7\0\0\0\2\0\0\0\0"]
+
+unknown_profile_icon = [ ""
+  "GdkP"
+  "\0\0\5\22"
+  "\2\1\0\2"
+  "\0\0\0P"
+  "\0\0\0\24"
+  "\0\0\0\24"
+  "\210\0\0\0\0\4\0\0\0\1\0\0\0\4\0\0\0\6\0\0\0\3\216\0\0\0\0\11\0\0\0\4"
+  "\0\0\0\37\0\0\0""9\0\0\0D\0\0\0F\0\0\0@\0\0\0/\0\0\0\21\0\0\0\1\212\0"
+  "\0\0\0\7\0\0\0\23\0\0\0\77\0\0\0K\0\0\0E\0\0\0:\0\0\0""7\0\0\0\77\202"
+  "\0\0\0I\2\0\0\0-\0\0\0\4\210\0\0\0\0\15\0\0\0\26\0\0\0F\0\0\0I\0\0\0"
+  "(\0\0\0\13\0\0\0\2\0\0\0\1\0\0\0\4\0\0\0\24\0\0\0:\0\0\0K\0\0\0""4\0"
+  "\0\0\6\206\0\0\0\0\17\0\0\0\17\0\0\0D\0\0\0E\0\0\0\26\0\0\0\13\0\0\0"
+  "#\0\0\0""1\0\0\0""4\0\0\0,\0\0\0\27\0\0\0\7\0\0\0/\0\0\0K\0\0\0""0\0"
+  "\0\0\2\204\0\0\0\0\20\0\0\0\3\0\0\0""9\0\0\0J\0\0\0\32\0\0\0\30\0\0\0"
+  "7\0\0\0.\0\0\0\35\0\0\0\32\0\0\0$\0\0\0""6\0\0\0,\0\0\0\13\0\0\0""6\0"
+  "\0\0K\0\0\0\32\204\0\0\0\0\7\0\0\0\31\0\0\0K\0\0\0""0\0\0\0\25\0\0\0"
+  "8\0\0\0\35\0\0\0\3\202\0\0\0\0\2\0\0\0\1\0\0\0\13\202\0\0\0""0\4\0\0"
+  "\0\21\0\0\0F\0\0\0>\0\0\0\3\203\0\0\0\0\21\0\0\0""5\0\0\0E\0\0\0\23\0"
+  "\0\0""7\0\0\0\37\0\0\0\2\0\0\0\20\0\0\0\36\0\0\0\40\0\0\0\31\0\0\0\6"
+  "\0\0\0\7\0\0\0""2\0\0\0#\0\0\0)\0\0\0I\0\0\0\22\203\0\0\0\0\21\0\0\0"
+  "\20\0\0\0\25\0\0\0\"\0\0\0""1\0\0\0\4\0\0\0\30\0\0\0\35\0\0\0\13\0\0"
+  "\0\7\0\0\0\21\0\0\0\"\0\0\0\10\0\0\0\25\0\0\0""6\0\0\0\20\0\0\0\33\0"
+  "\0\0\4\205\0\0\0\0\15\0\0\0\31\0\0\0\21\0\0\0\16\0\0\0\36\0\0\0\2\0\0"
+  "\0\0\0\0\0\1\0\0\0\0\0\0\0\14\0\0\0\40\0\0\0\3\0\0\0\40\0\0\0\10\206"
+  "\0\0\0\0\16***\21\210\210\210G\223\223\223LiiiL\204\204\204L\34=n\300"
+  "\14""1i\361\12""0i\374\20""4j\342CXx}dddL\202\202\202LxxxG\40\40\40\21"
+  "\205\0\0\0\0\2&&&\13\251\251\251F\202\374\374\374L\202\372\372\372L\5"
+  "\"Cv\310Lf\217\226@]\211\245\12""0i\377\22""7n\353\202\365\365\365L\3"
+  "\362\362\362L\226\226\226F\27\27\27\14\204\0\0\0\0\21,,,!\354\354\354"
+  "L\355\355\355L\351\351\351L\346\346\346L\342\342\342L\335\335\335L\334"
+  "\334\334L\210\227\255h\12""0i\377\21""6l\352\316\316\316L\313\313\313"
+  "L\307\307\307L\314\314\314L\35\35\35$\0\0\0\1\202\0\0\0\0\14\0\0\0\1"
+  "((('\357\357\357L\345\345\345L\341\341\341L\337\337\337L\333\333\333"
+  "L\326\326\326L|\215\245l\20""5l\355\12""0i\374Sj\215\205\202\302\302"
+  "\302L\4\314\314\314L\311\311\311L\33\33\33'\0\0\0\2\202\0\0\0\1\22\0"
+  "\0\0\2&&&(\356\356\356L\342\342\342L\347\347\347L\346\346\346L\324GG"
+  "L\337\337\337L\22""0g\351\12""0i\377^9Z\201<\341@L\324GGL<\341@L\321"
+  "\321\321L\276\276\276L\27\27\27)\0\0\0\4\202\0\0\0\1\22\0\0\0\5$$$+\355"
+  "\355\355L\345\345\345L\344\344\344L\340\340\340L\334\334\334L\331\331"
+  "\331Law\227\177`u\226\177\316\316\316L\312\312\312L\306\306\306L\307"
+  "\307\307L\313\313\313L\272\272\272L\24\24\24,\0\0\0\7\202\0\0\0\2\27"
+  "\0\0\0\7\"\"\"-\354\354\354L\346\346\346L\342\342\342L\337\337\337L\333"
+  "\333\333L\327\327\327LSk\217\212Qi\216\212\314\314\314L\310\310\310L"
+  "\305\305\305L\301\301\301L\276\276\276L\271\271\271L\23\23\23/\0\0\0"
+  "\10\0\0\0\2\0\0\0\1\0\0\0\10\40\40\40,\310\310\310K\202\274\274\274L"
+  "\3\272\272\272L\271\271\271L\270\270\270L\202\12""0i\377\16\271\271\271"
+  "L\270\270\270L\266\266\266L\265\265\265L\264\264\264L\231\231\231K\16"
+  "\16\16""0\0\0\0\10\0\0\0\2\0\0\0\1\0\0\0\3\0\0\0\16\0\0\0!\0\0\0%\205"
+  "\0\0\0&\205\0\0\0'\12\0\0\0&\0\0\0$\0\0\0\22\0\0\0\4\0\0\0\1\0\0\0\0"
+  "\0\0\0\1\0\0\0\2\0\0\0\3\0\0\0\4\206\0\0\0\6\203\0\0\0\7\202\0\0\0\6"
+  "\4\0\0\0\4\0\0\0\2\0\0\0\1\0\0\0\0"]
+
+signal_xpm_barely = [
+"20 20 10 1",
+" 	c None",
+".	c #C6C6C6",
+"+	c #CCCCCC",
+"@	c #DBDBDB",
+"#	c #D3D3D3",
+"$	c #A9B099",
+"%	c #95A173",
+"&	c #6B8428",
+"*	c #B4B7AC",
+"=	c #80924D",
+"               .+++.",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"          .++++#@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"     $%%%%#@@@@@@@@+",
+"     %&&&&@@@@@@@@@+",
+"     %&&&&@@@@@@@@@+",
+"     %&&&&@@@@@@@@@+",
+"     %&&&&@@@@@@@@@+",
+"*%%%%=&&&&@@@@@@@@@+",
+"%&&&&&&&&&@@@@@@@@@+",
+"%&&&&&&&&&@@@@@@@@@+",
+"%&&&&&&&&&@@@@@@@@@+",
+"*%%%%%%%%%+++++++++."
+]
+
+
+signal_xpm_best = [
+"20 20 6 1",
+" 	c None",
+".	c #9DAABF",
+"+	c #7B96BF",
+"@	c #386EBF",
+"#	c #5982BF",
+"$	c #AEB4BF",
+"               .+++.",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"          .++++#@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"     .++++#@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"$++++#@@@@@@@@@@@@@+",
+"+@@@@@@@@@@@@@@@@@@+",
+"+@@@@@@@@@@@@@@@@@@+",
+"+@@@@@@@@@@@@@@@@@@+",
+"$++++++++++++++++++."
+]
+
+signal_xpm_none = [
+"20 20 6 1",
+" 	c None",
+".	c #C6C6C6",
+"+	c #CCCCCC",
+"@	c #DBDBDB",
+"#	c #D3D3D3",
+"$	c #C2C2C2",
+"               .+++.",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"          .++++#@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"     .++++#@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"$++++#@@@@@@@@@@@@@+",
+"+@@@@@@@@@@@@@@@@@@+",
+"+@@@@@@@@@@@@@@@@@@+",
+"+@@@@@@@@@@@@@@@@@@+",
+"$++++++++++++++++++."
+]
+
+signal_xpm_ok = [
+"20 20 10 1",
+" 	c None",
+".	c #C6C6C6",
+"+	c #CCCCCC",
+"@	c #DBDBDB",
+"#	c #A1A5B2",
+"$	c #848DA5",
+"%	c #D3D3D3",
+"&	c #4A5B8C",
+"*	c #677498",
+"=	c #B0B2B8",
+"               .+++.",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"          #$$$$%@@@+",
+"          $&&&&@@@@+",
+"          $&&&&@@@@+",
+"          $&&&&@@@@+",
+"          $&&&&@@@@+",
+"     #$$$$*&&&&@@@@+",
+"     $&&&&&&&&&@@@@+",
+"     $&&&&&&&&&@@@@+",
+"     $&&&&&&&&&@@@@+",
+"     $&&&&&&&&&@@@@+",
+"=$$$$*&&&&&&&&&@@@@+",
+"$&&&&&&&&&&&&&&@@@@+",
+"$&&&&&&&&&&&&&&@@@@+",
+"$&&&&&&&&&&&&&&@@@@+",
+"=$$$$$$$$$$$$$$++++."
+]
+
+
+signal_xpm_low = [
+"20 20 8 1",
+" 	c None",
+".	c #C6C6C6",
+"+	c #CCCCCC",
+"@	c #DBDBDB",
+"#	c #D3D3D3",
+"$	c #BFB0B5",
+"%	c #C18799",
+"&	c #C54F74",
+"               .+++.",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"               +@@@+",
+"          .++++#@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"          +@@@@@@@@+",
+"     .++++#@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"     +@@@@@@@@@@@@@+",
+"$%%%%#@@@@@@@@@@@@@+",
+"%&&&&@@@@@@@@@@@@@@+",
+"%&&&&@@@@@@@@@@@@@@+",
+"%&&&&@@@@@@@@@@@@@@+",
+"$%%%%++++++++++++++."
+]
+signal_none_pb	= None
+signal_low_pb	= None
+signal_barely_pb= None
+signal_ok_pb	= None
+signal_best_pb	= None
+exit_flag	= False
+dhcp_flag	= False
+current_ip	= ''
+current_ssid	= ''
+check_none_times = 0
+####################################################################################################
+# Make so we can be imported
+if __name__ == "__main__":
+	import gtk, gobject
+	#Spear add the lines below @version 0.2.9
+	try:
+		#it's a little tricky, open CONF_FILE with write mode to check if use has sudo authentication
+		fd = open( CONF_FILE, "r+" )
+		confFile.write( fd )
+		fd.close()
+	except:
+		print >> sys.stderr, "Authentication for running 3dsp-wifi-radar failed!"
+		dlg = gtk.MessageDialog(
+					None,
+					gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_MODAL,
+					gtk.MESSAGE_ERROR,
+					gtk.BUTTONS_OK,
+					"Please ensure you have sudo authentication")
+		dlg.set_keep_above(True)
+		dlg.run()
+		dlg.destroy()
+		del dlg
+		sys.exit(1)
+	#Spear add end
+
+	# Are we in configure mode?
+	if len( sys.argv ) > 1 and ( sys.argv[1] == '--version' or sys.argv[1] == '-v' ):
+		print "WiFi-Radar version %s" % WIFI_RADAR_VERSION
+	elif len( sys.argv ) > 1 and ( sys.argv[1] == '--daemon' or sys.argv[1] == '-d' ):
+		scanning_thread()
+		connect_to_preferred()
+	else:
+		#allen add the line below @version 0.2.8 to check if wifi-radar is already runing
+		if not find_process_by_name('wifi-radar'):
+			gtk.gdk.threads_init()
+			configure()
+		#Spear add the lines below @version 0.2.5
+		else:
+			print '3DSP WiFi Radar is already running!'
+			dlg = gtk.MessageDialog(
+						None,
+						gtk.DIALOG_DESTROY_WITH_PARENT | gtk.DIALOG_MODAL,
+						gtk.MESSAGE_ERROR,
+						gtk.BUTTONS_OK,
+						"3DSP WiFi Radar is already running!")
+			dlg.set_keep_above(True)
+			dlg.run()
+			dlg.destroy()
+			del dlg
+		#Spear add end
+
+

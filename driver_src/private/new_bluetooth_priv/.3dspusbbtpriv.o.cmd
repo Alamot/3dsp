@@ -1,0 +1,1 @@
+cmd_/home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtpriv.o := ld -m elf_i386   -r -o /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtpriv.o /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/usbbt_entry.o /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtlib.a 

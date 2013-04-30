@@ -1,0 +1,18 @@
+Source: wifi-radar
+Section: net
+Priority: optional
+Maintainer: Ante Karamatic <ivoks@grad.hr>
+Build-Depends-Indep: debhelper (>= 4.0.0), dpatch
+Standards-Version: 3.6.2
+
+Package: wifi-radar
+Architecture: all
+Depends: python, python-gtk2 (>=2.0), dhcp3-client, wireless-tools
+Recommends: wpasupplicant
+Description: graphical utility for managing Wi-Fi profiles
+ It enables you to scan for available networks and create profiles for your
+ preferred networks. At boot time, running Wi-Fi Radar will automatically
+ scan for an available preferred network and connect to it. You can drag and
+ drop your preferred networks to arrange the profile priority.
+ .
+ Homepage: http://wifi-radar.systemimager.org/

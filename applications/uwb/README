@@ -1,0 +1,28 @@
+'uwb' can be started in the command line, or clicking on 'accessories/uwb' in the system menu; 
+A tray icon will be showed in the status bar, click it to pop-up the menu for bluetooth and wlan switching.
+
+*******************************************************************************
+Notes:
+
+	. The program is based on 'GTK2.0'.
+	
+	. Require GTK version 2.9.2 or above, you can use `pkg-config --modversion gtk+-2.0' to check it.
+
+	. Require 'libgtk2.0-dev' and 'libnotify-dev' to install the program.
+
+	. Be sure that card was properly inserted and drivers were loaded correctly.
+
+	. Can not be started with two processes at the same time.	
+
+
+	
+*******************************************************************************
+Complie and Install:
+	./configure
+	make
+	make install
+
+
+*******************************************************************************
+Uninstall:
+	make uninstall-local

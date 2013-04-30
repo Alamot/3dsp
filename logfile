@@ -1,0 +1,562 @@
+make -C /lib/modules/3.8.0-19-generic/build/ M=`pwd` clean
+make[1]: Entering directory `/usr/src/linux-headers-3.8.0-19-generic'
+make[1]: Leaving directory `/usr/src/linux-headers-3.8.0-19-generic'
+make -C /lib/modules/3.8.0-19-generic/build/ M=`pwd`
+make[1]: Entering directory `/usr/src/linux-headers-3.8.0-19-generic'
+  LD      /home/alamot/3dsp/driver_src/bus/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/bus/businit.o
+  CC [M]  /home/alamot/3dsp/driver_src/bus/busioctl.o
+In file included from /usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess.h:550:0,
+                 from include/net/checksum.h:25,
+                 from include/linux/skbuff.h:29,
+                 from /home/alamot/3dsp/driver_src/bus/businit.h:28,
+                 from /home/alamot/3dsp/driver_src/bus/busioctl.c:16:
+In function ‘copy_from_user’,
+    inlined from ‘tdspbus_unlocked_ioctl’ at /home/alamot/3dsp/driver_src/bus/busioctl.c:153:41:
+/usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess_32.h:211:26: warning: call to ‘copy_from_user_overflow’ declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+In function ‘copy_from_user’,
+    inlined from ‘tdspbus_unlocked_ioctl’ at /home/alamot/3dsp/driver_src/bus/busioctl.c:169:41:
+/usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess_32.h:211:26: warning: call to ‘copy_from_user_overflow’ declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+  LD [M]  /home/alamot/3dsp/driver_src/bus/3dspusbbus.o
+  LD      /home/alamot/3dsp/driver_src/new_bluetooth/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_memory.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_event.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_mutex.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_timer.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_tasklet.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_usb.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_work.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_skb.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_file.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_bus.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.o
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c: In function ‘hci_usb_open’:
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:268:21: error: ‘struct hci_dev’ has no member named ‘driver_data’
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:286:26: error: ‘struct hci_dev’ has no member named ‘driver_data’
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c: In function ‘hci_usb_close’:
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:299:15: error: ‘struct hci_dev’ has no member named ‘driver_data’
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c: In function ‘hci_usb_send_frame’:
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:328:21: error: ‘struct hci_dev’ has no member named ‘driver_data’
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c: In function ‘hci_usb_ioctl’:
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:390:21: error: ‘struct hci_dev’ has no member named ‘driver_data’
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c: In function ‘register_HCI_device’:
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:562:6: error: ‘struct hci_dev’ has no member named ‘driver_data’
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:568:6: error: ‘struct hci_dev’ has no member named ‘destruct’
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:572:6: error: ‘struct hci_dev’ has no member named ‘owner’
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c: In function ‘unregister_HCI_device’:
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:607:2: error: void value not ignored as it ought to be
+make[3]: *** [/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.o] Error 1
+make[2]: *** [/home/alamot/3dsp/driver_src/new_bluetooth] Error 2
+make[1]: *** [_module_/home/alamot/3dsp/driver_src] Error 2
+make[1]: Leaving directory `/usr/src/linux-headers-3.8.0-19-generic'
+make: *** [all] Error 2
+cp -f 3dspcode.bin /usr/local/3DSP/usb/
+cp -f bus/3dspusbbus.ko /usr/local/3DSP/usb/
+cp: cannot stat ‘bus/3dspusbbus.ko’: No such file or directory
+make: *** [install] Error 1
+cp: cannot stat ‘applications/bin/3dspcode.bin’: No such file or directory
+Makefile:119: warning: overriding commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:115: warning: ignoring old commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:119: warning: overriding commands for target `WiFi'
+Makefile:115: warning: ignoring old commands for target `WiFi'
+Makefile:119: warning: overriding commands for target `Radar'
+Makefile:115: warning: ignoring old commands for target `Radar'
+test ! -d /usr/share/doc/3dsp-wifi-radar || rm -rf /usr/share/doc/3dsp-wifi-radar
+test ! -e /etc/init.d/wifi-radar || rm /etc/init.d/wifi-radar
+test ! -e /usr/share/pixmaps/wifi-radar.svg || rm /usr/share/pixmaps/wifi-radar.svg	
+test ! -e /usr/share/pixmaps/wifi-radar.png || rm /usr/share/pixmaps/wifi-radar.png
+test ! -e /usr/share/pixmaps/wifi_radar_32x32.png || rm /usr/share/pixmaps/wifi_radar_32x32.png
+test ! -e /usr/share/pixmaps/connected1.png || rm /usr/share/pixmaps/connected1.png
+test ! -e /usr/share/pixmaps/connected2.png || rm /usr/share/pixmaps/connected2.png
+test ! -e /usr/share/pixmaps/connected3.png || rm /usr/share/pixmaps/connected3.png
+test ! -e /usr/share/pixmaps/connected4.png || rm /usr/share/pixmaps/connected4.png
+test ! -e /usr/share/applications/wifi-radar.desktop || rm /usr/share/applications/wifi-radar.desktop
+test ! -d /etc/security/console.apps || test ! -e /etc/security/console.apps/3dsp-wifi-radar-pam || rm /etc/security/console.apps/3dsp-wifi-radar-pam
+test ! -d /etc/pam.d || test ! -e /etc/pam.d/3dsp-wifi-radar-pam || rm /etc/pam.d/3dsp-wifi-radar-pam
+test ! -e /usr/sbin/3dsp-wifi-radar || rm /usr/sbin/3dsp-wifi-radar
+test ! -e /etc/wifi-radar/wifi-radar.conf || rm /etc/wifi-radar/wifi-radar.conf
+test ! -e /etc/wifi-radar/Makefile || rm /etc/wifi-radar/Makefile
+Makefile:119: warning: overriding commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:115: warning: ignoring old commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:119: warning: overriding commands for target `WiFi'
+Makefile:115: warning: ignoring old commands for target `WiFi'
+Makefile:119: warning: overriding commands for target `Radar'
+Makefile:115: warning: ignoring old commands for target `Radar'
+cp wifi-radar wifi-radar.tmp
+perl -pi -e 's#^WIFI_RADAR_VERSION\s+=.*#WIFI_RADAR_VERSION = "3DSP WiFi Radar 0.3.7"#' wifi-radar.tmp
+perl -pi -e 's#^CONF_FILE\s+=.*#CONF_FILE = "/etc/wifi-radar/wifi-radar.conf"#' wifi-radar.tmp
+test -e /sbin/wpa_supplicant || perl -pi -e 's#^WPA_SUPPLICANT_COMMAND\s+=.*#WPA_SUPPLICANT_COMMAND = "/usr/sbin/wpa_supplicant"#' wifi-radar.tmp
+mv wifi-radar.tmp wifi-radar.localized
+cp wifi-radar.desktop wifi-desktop.tmp
+test ! -e /usr/bin/su-to-root || test ! -e /usr/bin/gksudo || perl -pi -e 's|^Exec=.*|Exec=su-to-root -X -c /usr/sbin/3dsp-wifi-radar|' wifi-desktop.tmp
+test -e /usr/bin/su-to-root || test -e /usr/bin/gksudo || perl -pi -e 's|^Exec=.*|Exec=3dsp-wifi-radar-pam|' wifi-desktop.tmp
+ln -sf /usr/bin/consolehelper /usr/sbin/3dsp-wifi-radar-pam
+echo USER=root > wifi-radar-pam.tmp
+echo PROGRAM=/usr/sbin/3dsp-wifi-radar >> wifi-radar-pam.tmp
+echo SESSION=true >> wifi-radar-pam.tmp
+echo "#%PAM-1.0" > wifi-radar-pam.tp2
+echo "auth       sufficient   pam_rootok.so" >> wifi-radar-pam.tp2
+echo "auth       sufficient   pam_timestamp.so" >> wifi-radar-pam.tp2
+echo "#auth       required     pam_stack.so service=system-auth" >> wifi-radar-pam.tp2
+echo "auth       required     pam_console.so" >> wifi-radar-pam.tp2
+echo "session    required     pam_permit.so" >> wifi-radar-pam.tp2
+echo "session    optional     pam_xauth.so" >> wifi-radar-pam.tp2
+echo "session    optional     pam_timestamp.so" >> wifi-radar-pam.tp2
+echo "account    required     pam_permit.so" >> wifi-radar-pam.tp2
+test -d /etc/wifi-radar || install -d -m 755 /etc/wifi-radar
+test -e /etc/wifi-radar/wifi-radar.conf || install -m 644 wifi-radar.conf	/etc/wifi-radar
+test -e /etc/wifi-radar/Makefile || install -m 644 Makefile	/etc/wifi-radar
+test -d /usr/sbin || install -d -m 755 /usr/sbin
+install -m 755 wifi-radar.localized	/usr/sbin/3dsp-wifi-radar
+rm wifi-radar.localized
+test -d /usr/share/doc/3dsp-wifi-radar || install -d -m 755 /usr/share/doc/3dsp-wifi-radar
+install -m 644 doc/3dsp-wifi-radar.html 		/usr/share/doc/3dsp-wifi-radar
+test -d /usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files || install -d -m 755 /usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image001.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image002.gif 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image003.gif 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image004.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image005.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image006.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image007.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image008.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+test -d /etc/init.d || install -d -m 755 /etc/init.d
+install -m 755 init_script 		/etc/init.d/wifi-radar
+test -d /usr/share/pixmaps || install -d -m 755 /usr/share/pixmaps
+install -m 644 pixmaps/wifi-radar.svg	/usr/share/pixmaps
+install -m 644 pixmaps/wifi-radar.png	/usr/share/pixmaps
+install -m 644 pixmaps/wifi_radar_32x32.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected1.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected2.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected3.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected4.png	/usr/share/pixmaps
+test -d /usr/share/applications || install -d -m 755 /usr/share/applications
+install -m 644 wifi-desktop.tmp		/usr/share/applications/wifi-radar.desktop
+rm -f wifi-desktop.tmp
+test -e /sbin/wpa_supplicant || test -d /etc/pam.d || install -d -m 755 /etc/pam.d
+test -e /sbin/wpa_supplicant || install -m 644 wifi-radar-pam.tp2 /etc/pam.d/3dsp-wifi-radar-pam
+test ! -e wifi-radar-pam.tp2 || rm wifi-radar-pam.tp2
+test -e /sbin/wpa_supplicant || test -d /etc/security/console.apps || install -d -m 755 /etc/security/console.apps
+test -e /sbin/wpa_supplicant || install -m 644 wifi-radar-pam.tmp /etc/security/console.apps/3dsp-wifi-radar-pam
+test ! -e wifi-radar-pam.tmp || rm wifi-radar-pam.tmp
+test -e /sbin/iwconfig || test ! -d packages || test ! -e packages/libiw28_28-1+etchnhalf.1_i386.deb || dpkg -i -GE packages/libiw28_28-1+etchnhalf.1_i386.deb
+test -e /sbin/iwconfig || test ! -d packages || test ! -e packages/wireless-tools_28-1+etchnhalf.1_i386.deb || dpkg -i -GE packages/wireless-tools_28-1+etchnhalf.1_i386.deb
+test -e /usr/bin/python || test ! -d packages || test ! -e packages/python-notify_0.1.1-2+b1_i386.deb || dpkg -i -GE packages/python-notify_0.1.1-2+b1_i386.deb
+cp: cannot stat ‘tdspusbcardinit’: No such file or directory
+Install_3DSPUSB.sh: line 89: /etc/init.d/tdspusbcardinit: No such file or directory
+cat: VERSION: No such file or directory
+cat: VERSION: No such file or directory
+cat: VERSION: No such file or directory
+cat: VERSION: No such file or directory
+test ! -d /usr/share/doc/3dsp-wifi-radar || rm -rf /usr/share/doc/3dsp-wifi-radar
+test ! -e /etc/init.d/wifi-radar || rm /etc/init.d/wifi-radar
+test ! -e /usr/share/pixmaps/wifi-radar.svg || rm /usr/share/pixmaps/wifi-radar.svg	
+test ! -e /usr/share/pixmaps/wifi-radar.png || rm /usr/share/pixmaps/wifi-radar.png
+test ! -e /usr/share/pixmaps/wifi_radar_32x32.png || rm /usr/share/pixmaps/wifi_radar_32x32.png
+test ! -e /usr/share/pixmaps/connected1.png || rm /usr/share/pixmaps/connected1.png
+test ! -e /usr/share/pixmaps/connected2.png || rm /usr/share/pixmaps/connected2.png
+test ! -e /usr/share/pixmaps/connected3.png || rm /usr/share/pixmaps/connected3.png
+test ! -e /usr/share/pixmaps/connected4.png || rm /usr/share/pixmaps/connected4.png
+test ! -e /usr/share/applications/wifi-radar.desktop || rm /usr/share/applications/wifi-radar.desktop
+test ! -d /etc/security/console.apps || test ! -e /etc/security/console.apps/3dsp-wifi-radar-pam || rm /etc/security/console.apps/3dsp-wifi-radar-pam
+test ! -d /etc/pam.d || test ! -e /etc/pam.d/3dsp-wifi-radar-pam || rm /etc/pam.d/3dsp-wifi-radar-pam
+test ! -e /usr/sbin/3dsp-wifi-radar || rm /usr/sbin/3dsp-wifi-radar
+test ! -e /etc/wifi-radar/wifi-radar.conf || rm /etc/wifi-radar/wifi-radar.conf
+test ! -e /etc/wifi-radar/Makefile || rm /etc/wifi-radar/Makefile
+open error: No such file or directory
+please make sure the 3DSP_card(usb) is  inserted!
+Uninstall_3DSPUSB.sh: line 86: /etc/init.d/tdspusbcardinit: No such file or directory
+make -C /lib/modules/3.8.0-19-generic/build/ M=`pwd` clean
+make[1]: Entering directory `/usr/src/linux-headers-3.8.0-19-generic'
+  CLEAN   /home/alamot/3dsp/driver_src/.tmp_versions
+  CLEAN   /home/alamot/3dsp/driver_src/Module.symvers
+make[1]: Leaving directory `/usr/src/linux-headers-3.8.0-19-generic'
+make -C /lib/modules/3.8.0-19-generic/build/ M=`pwd`
+make[1]: Entering directory `/usr/src/linux-headers-3.8.0-19-generic'
+  LD      /home/alamot/3dsp/driver_src/bus/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/bus/businit.o
+  CC [M]  /home/alamot/3dsp/driver_src/bus/busioctl.o
+In file included from /usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess.h:550:0,
+                 from include/net/checksum.h:25,
+                 from include/linux/skbuff.h:29,
+                 from /home/alamot/3dsp/driver_src/bus/businit.h:28,
+                 from /home/alamot/3dsp/driver_src/bus/busioctl.c:16:
+In function ‘copy_from_user’,
+    inlined from ‘tdspbus_unlocked_ioctl’ at /home/alamot/3dsp/driver_src/bus/busioctl.c:153:41:
+/usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess_32.h:211:26: warning: call to ‘copy_from_user_overflow’ declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+In function ‘copy_from_user’,
+    inlined from ‘tdspbus_unlocked_ioctl’ at /home/alamot/3dsp/driver_src/bus/busioctl.c:169:41:
+/usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess_32.h:211:26: warning: call to ‘copy_from_user_overflow’ declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+  LD [M]  /home/alamot/3dsp/driver_src/bus/3dspusbbus.o
+  LD      /home/alamot/3dsp/driver_src/new_bluetooth/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_memory.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_event.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_mutex.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_timer.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_tasklet.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_usb.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_work.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_skb.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_file.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_bus.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.o
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:376:13: warning: ‘hci_usb_destruct’ defined but not used [-Wunused-function]
+  LD [M]  /home/alamot/3dsp/driver_src/new_bluetooth/3dspusbbt.o
+  LD      /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/usbbt_entry.o
+  LD [M]  /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtpriv.o
+  LD      /home/alamot/3dsp/driver_src/private/wlan_priv/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/private/wlan_priv/usbwlan_entry.o
+  LD [M]  /home/alamot/3dsp/driver_src/private/wlan_priv/3dspusbwlanpriv.o
+  LD      /home/alamot/3dsp/driver_src/wlan/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_memory.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_event.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_mutex.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_timer.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_tasklet.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_usb.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_bus.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_file.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/lwlan_ioctl.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/lwlan_netdev.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/lwlan_entry.o
+  LD [M]  /home/alamot/3dsp/driver_src/wlan/3dspusbwlan.o
+  LD      /home/alamot/3dsp/driver_src/built-in.o
+  Building modules, stage 2.
+  MODPOST 5 modules
+  CC      /home/alamot/3dsp/driver_src/bus/3dspusbbus.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/bus/3dspusbbus.ko
+  CC      /home/alamot/3dsp/driver_src/new_bluetooth/3dspusbbt.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/new_bluetooth/3dspusbbt.ko
+  CC      /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtpriv.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtpriv.ko
+  CC      /home/alamot/3dsp/driver_src/private/wlan_priv/3dspusbwlanpriv.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/private/wlan_priv/3dspusbwlanpriv.ko
+  CC      /home/alamot/3dsp/driver_src/wlan/3dspusbwlan.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/wlan/3dspusbwlan.ko
+make[1]: Leaving directory `/usr/src/linux-headers-3.8.0-19-generic'
+cp -f 3dspcode.bin /usr/local/3DSP/usb/
+cp -f bus/3dspusbbus.ko /usr/local/3DSP/usb/
+cp -f new_bluetooth/3dspusbbt.ko /usr/local/3DSP/usb/
+cp -f wlan/3dspusbwlan.ko /usr/local/3DSP/usb/
+cp -f private/new_bluetooth_priv/3dspusbbtpriv.ko /usr/local/3DSP/usb/
+cp -f private/wlan_priv/3dspusbwlanpriv.ko /usr/local/3DSP/usb/
+cp -f tdspusbcardinit /etc/init.d/
+chmod 755 /etc/init.d/tdspusbcardinit
+Inserting modules...
+insmod /usr/local/3DSP/usb/3dspusbbus.ko
+insmod /usr/local/3DSP/usb/3dspusbwlanpriv.ko
+insmod /usr/local/3DSP/usb/3dspusbwlan.ko
+insmod /usr/local/3DSP/usb/3dspusbbtpriv.ko
+insmod /usr/local/3DSP/usb/3dspusbbt.ko
+sleep 0.5
+Creating devices file for 3DSP driver...
+mknod  /dev/tdspusbbus c `awk '$2=="3dspusbbus" {print $1}' /proc/devices` 0
+cp: cannot stat ‘applications/bin/3dspcode.bin’: No such file or directory
+Makefile:119: warning: overriding commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:115: warning: ignoring old commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:119: warning: overriding commands for target `WiFi'
+Makefile:115: warning: ignoring old commands for target `WiFi'
+Makefile:119: warning: overriding commands for target `Radar'
+Makefile:115: warning: ignoring old commands for target `Radar'
+test ! -d /usr/share/doc/3dsp-wifi-radar || rm -rf /usr/share/doc/3dsp-wifi-radar
+test ! -e /etc/init.d/wifi-radar || rm /etc/init.d/wifi-radar
+test ! -e /usr/share/pixmaps/wifi-radar.svg || rm /usr/share/pixmaps/wifi-radar.svg	
+test ! -e /usr/share/pixmaps/wifi-radar.png || rm /usr/share/pixmaps/wifi-radar.png
+test ! -e /usr/share/pixmaps/wifi_radar_32x32.png || rm /usr/share/pixmaps/wifi_radar_32x32.png
+test ! -e /usr/share/pixmaps/connected1.png || rm /usr/share/pixmaps/connected1.png
+test ! -e /usr/share/pixmaps/connected2.png || rm /usr/share/pixmaps/connected2.png
+test ! -e /usr/share/pixmaps/connected3.png || rm /usr/share/pixmaps/connected3.png
+test ! -e /usr/share/pixmaps/connected4.png || rm /usr/share/pixmaps/connected4.png
+test ! -e /usr/share/applications/wifi-radar.desktop || rm /usr/share/applications/wifi-radar.desktop
+test ! -d /etc/security/console.apps || test ! -e /etc/security/console.apps/3dsp-wifi-radar-pam || rm /etc/security/console.apps/3dsp-wifi-radar-pam
+test ! -d /etc/pam.d || test ! -e /etc/pam.d/3dsp-wifi-radar-pam || rm /etc/pam.d/3dsp-wifi-radar-pam
+test ! -e /usr/sbin/3dsp-wifi-radar || rm /usr/sbin/3dsp-wifi-radar
+test ! -e /etc/wifi-radar/wifi-radar.conf || rm /etc/wifi-radar/wifi-radar.conf
+test ! -e /etc/wifi-radar/Makefile || rm /etc/wifi-radar/Makefile
+Makefile:119: warning: overriding commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:115: warning: ignoring old commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:119: warning: overriding commands for target `WiFi'
+Makefile:115: warning: ignoring old commands for target `WiFi'
+Makefile:119: warning: overriding commands for target `Radar'
+Makefile:115: warning: ignoring old commands for target `Radar'
+cp wifi-radar wifi-radar.tmp
+perl -pi -e 's#^WIFI_RADAR_VERSION\s+=.*#WIFI_RADAR_VERSION = "3DSP WiFi Radar 0.3.7"#' wifi-radar.tmp
+perl -pi -e 's#^CONF_FILE\s+=.*#CONF_FILE = "/etc/wifi-radar/wifi-radar.conf"#' wifi-radar.tmp
+test -e /sbin/wpa_supplicant || perl -pi -e 's#^WPA_SUPPLICANT_COMMAND\s+=.*#WPA_SUPPLICANT_COMMAND = "/usr/sbin/wpa_supplicant"#' wifi-radar.tmp
+mv wifi-radar.tmp wifi-radar.localized
+cp wifi-radar.desktop wifi-desktop.tmp
+test ! -e /usr/bin/su-to-root || test ! -e /usr/bin/gksudo || perl -pi -e 's|^Exec=.*|Exec=su-to-root -X -c /usr/sbin/3dsp-wifi-radar|' wifi-desktop.tmp
+test -e /usr/bin/su-to-root || test -e /usr/bin/gksudo || perl -pi -e 's|^Exec=.*|Exec=3dsp-wifi-radar-pam|' wifi-desktop.tmp
+ln -sf /usr/bin/consolehelper /usr/sbin/3dsp-wifi-radar-pam
+echo USER=root > wifi-radar-pam.tmp
+echo PROGRAM=/usr/sbin/3dsp-wifi-radar >> wifi-radar-pam.tmp
+echo SESSION=true >> wifi-radar-pam.tmp
+echo "#%PAM-1.0" > wifi-radar-pam.tp2
+echo "auth       sufficient   pam_rootok.so" >> wifi-radar-pam.tp2
+echo "auth       sufficient   pam_timestamp.so" >> wifi-radar-pam.tp2
+echo "#auth       required     pam_stack.so service=system-auth" >> wifi-radar-pam.tp2
+echo "auth       required     pam_console.so" >> wifi-radar-pam.tp2
+echo "session    required     pam_permit.so" >> wifi-radar-pam.tp2
+echo "session    optional     pam_xauth.so" >> wifi-radar-pam.tp2
+echo "session    optional     pam_timestamp.so" >> wifi-radar-pam.tp2
+echo "account    required     pam_permit.so" >> wifi-radar-pam.tp2
+test -d /etc/wifi-radar || install -d -m 755 /etc/wifi-radar
+test -e /etc/wifi-radar/wifi-radar.conf || install -m 644 wifi-radar.conf	/etc/wifi-radar
+test -e /etc/wifi-radar/Makefile || install -m 644 Makefile	/etc/wifi-radar
+test -d /usr/sbin || install -d -m 755 /usr/sbin
+install -m 755 wifi-radar.localized	/usr/sbin/3dsp-wifi-radar
+rm wifi-radar.localized
+test -d /usr/share/doc/3dsp-wifi-radar || install -d -m 755 /usr/share/doc/3dsp-wifi-radar
+install -m 644 doc/3dsp-wifi-radar.html 		/usr/share/doc/3dsp-wifi-radar
+test -d /usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files || install -d -m 755 /usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image001.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image002.gif 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image003.gif 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image004.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image005.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image006.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image007.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image008.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+test -d /etc/init.d || install -d -m 755 /etc/init.d
+install -m 755 init_script 		/etc/init.d/wifi-radar
+test -d /usr/share/pixmaps || install -d -m 755 /usr/share/pixmaps
+install -m 644 pixmaps/wifi-radar.svg	/usr/share/pixmaps
+install -m 644 pixmaps/wifi-radar.png	/usr/share/pixmaps
+install -m 644 pixmaps/wifi_radar_32x32.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected1.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected2.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected3.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected4.png	/usr/share/pixmaps
+test -d /usr/share/applications || install -d -m 755 /usr/share/applications
+install -m 644 wifi-desktop.tmp		/usr/share/applications/wifi-radar.desktop
+rm -f wifi-desktop.tmp
+test -e /sbin/wpa_supplicant || test -d /etc/pam.d || install -d -m 755 /etc/pam.d
+test -e /sbin/wpa_supplicant || install -m 644 wifi-radar-pam.tp2 /etc/pam.d/3dsp-wifi-radar-pam
+test ! -e wifi-radar-pam.tp2 || rm wifi-radar-pam.tp2
+test -e /sbin/wpa_supplicant || test -d /etc/security/console.apps || install -d -m 755 /etc/security/console.apps
+test -e /sbin/wpa_supplicant || install -m 644 wifi-radar-pam.tmp /etc/security/console.apps/3dsp-wifi-radar-pam
+test ! -e wifi-radar-pam.tmp || rm wifi-radar-pam.tmp
+test -e /sbin/iwconfig || test ! -d packages || test ! -e packages/libiw28_28-1+etchnhalf.1_i386.deb || dpkg -i -GE packages/libiw28_28-1+etchnhalf.1_i386.deb
+test -e /sbin/iwconfig || test ! -d packages || test ! -e packages/wireless-tools_28-1+etchnhalf.1_i386.deb || dpkg -i -GE packages/wireless-tools_28-1+etchnhalf.1_i386.deb
+test -e /usr/bin/python || test ! -d packages || test ! -e packages/python-notify_0.1.1-2+b1_i386.deb || dpkg -i -GE packages/python-notify_0.1.1-2+b1_i386.deb
+cp: cannot stat ‘tdspusbcardinit’: No such file or directory
+Error: could not insert module /usr/local/3DSP/usb/3dspusbbus.ko: File exists
+Error: could not insert module /usr/local/3DSP/usb/3dspusbwlanpriv.ko: File exists
+Error: could not insert module /usr/local/3DSP/usb/3dspusbwlan.ko: File exists
+Error: could not insert module /usr/local/3DSP/usb/3dspusbbtpriv.ko: File exists
+Error: could not insert module /usr/local/3DSP/usb/3dspusbbt.ko: File exists
+mknod: ‘/dev/tdspusbbus’: File exists
+cat: VERSION: No such file or directory
+cat: VERSION: No such file or directory
+cat: VERSION: No such file or directory
+cat: VERSION: No such file or directory
+test ! -d /usr/share/doc/3dsp-wifi-radar || rm -rf /usr/share/doc/3dsp-wifi-radar
+test ! -e /etc/init.d/wifi-radar || rm /etc/init.d/wifi-radar
+test ! -e /usr/share/pixmaps/wifi-radar.svg || rm /usr/share/pixmaps/wifi-radar.svg	
+test ! -e /usr/share/pixmaps/wifi-radar.png || rm /usr/share/pixmaps/wifi-radar.png
+test ! -e /usr/share/pixmaps/wifi_radar_32x32.png || rm /usr/share/pixmaps/wifi_radar_32x32.png
+test ! -e /usr/share/pixmaps/connected1.png || rm /usr/share/pixmaps/connected1.png
+test ! -e /usr/share/pixmaps/connected2.png || rm /usr/share/pixmaps/connected2.png
+test ! -e /usr/share/pixmaps/connected3.png || rm /usr/share/pixmaps/connected3.png
+test ! -e /usr/share/pixmaps/connected4.png || rm /usr/share/pixmaps/connected4.png
+test ! -e /usr/share/applications/wifi-radar.desktop || rm /usr/share/applications/wifi-radar.desktop
+test ! -d /etc/security/console.apps || test ! -e /etc/security/console.apps/3dsp-wifi-radar-pam || rm /etc/security/console.apps/3dsp-wifi-radar-pam
+test ! -d /etc/pam.d || test ! -e /etc/pam.d/3dsp-wifi-radar-pam || rm /etc/pam.d/3dsp-wifi-radar-pam
+test ! -e /usr/sbin/3dsp-wifi-radar || rm /usr/sbin/3dsp-wifi-radar
+test ! -e /etc/wifi-radar/wifi-radar.conf || rm /etc/wifi-radar/wifi-radar.conf
+test ! -e /etc/wifi-radar/Makefile || rm /etc/wifi-radar/Makefile
+call the remove device
+^_^ remove devices success!
+make -C /lib/modules/3.8.0-19-generic/build/ M=`pwd` clean
+make[1]: Entering directory `/usr/src/linux-headers-3.8.0-19-generic'
+  CLEAN   /home/alamot/3dsp/driver_src/.tmp_versions
+  CLEAN   /home/alamot/3dsp/driver_src/Module.symvers
+make[1]: Leaving directory `/usr/src/linux-headers-3.8.0-19-generic'
+make -C /lib/modules/3.8.0-19-generic/build/ M=`pwd`
+make[1]: Entering directory `/usr/src/linux-headers-3.8.0-19-generic'
+  LD      /home/alamot/3dsp/driver_src/bus/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/bus/businit.o
+/home/alamot/3dsp/driver_src/bus/businit.c:25:13: warning: ‘g_driver_name’ defined but not used [-Wunused-variable]
+/home/alamot/3dsp/driver_src/bus/businit.c:26:13: warning: ‘g_complie_datetime’ defined but not used [-Wunused-variable]
+  CC [M]  /home/alamot/3dsp/driver_src/bus/busioctl.o
+In file included from /usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess.h:550:0,
+                 from include/net/checksum.h:25,
+                 from include/linux/skbuff.h:29,
+                 from /home/alamot/3dsp/driver_src/bus/businit.h:28,
+                 from /home/alamot/3dsp/driver_src/bus/busioctl.c:16:
+In function ‘copy_from_user’,
+    inlined from ‘tdspbus_unlocked_ioctl’ at /home/alamot/3dsp/driver_src/bus/busioctl.c:153:41:
+/usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess_32.h:211:26: warning: call to ‘copy_from_user_overflow’ declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+In function ‘copy_from_user’,
+    inlined from ‘tdspbus_unlocked_ioctl’ at /home/alamot/3dsp/driver_src/bus/busioctl.c:169:41:
+/usr/src/linux-headers-3.8.0-19-generic/arch/x86/include/asm/uaccess_32.h:211:26: warning: call to ‘copy_from_user_overflow’ declared with attribute warning: copy_from_user() buffer size is not provably correct [enabled by default]
+  LD [M]  /home/alamot/3dsp/driver_src/bus/3dspusbbus.o
+  LD      /home/alamot/3dsp/driver_src/new_bluetooth/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_memory.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_event.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_mutex.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_timer.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_tasklet.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_usb.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_work.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_skb.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_file.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/tdsp_bus.o
+  CC [M]  /home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.o
+/home/alamot/3dsp/driver_src/new_bluetooth/lbluetooth_entry.c:376:13: warning: ‘hci_usb_destruct’ defined but not used [-Wunused-function]
+  LD [M]  /home/alamot/3dsp/driver_src/new_bluetooth/3dspusbbt.o
+  LD      /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/usbbt_entry.o
+  LD [M]  /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtpriv.o
+  LD      /home/alamot/3dsp/driver_src/private/wlan_priv/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/private/wlan_priv/usbwlan_entry.o
+  LD [M]  /home/alamot/3dsp/driver_src/private/wlan_priv/3dspusbwlanpriv.o
+  LD      /home/alamot/3dsp/driver_src/wlan/built-in.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_memory.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_event.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_mutex.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_timer.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_tasklet.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_usb.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_bus.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/tdsp_file.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/lwlan_ioctl.o
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/lwlan_netdev.o
+/home/alamot/3dsp/driver_src/wlan/lwlan_netdev.c: In function ‘wlan_netdev_setup’:
+/home/alamot/3dsp/driver_src/wlan/lwlan_netdev.c:224:2: warning: ISO C90 forbids mixed declarations and code [-Wdeclaration-after-statement]
+  CC [M]  /home/alamot/3dsp/driver_src/wlan/lwlan_entry.o
+  LD [M]  /home/alamot/3dsp/driver_src/wlan/3dspusbwlan.o
+  LD      /home/alamot/3dsp/driver_src/built-in.o
+  Building modules, stage 2.
+  MODPOST 5 modules
+  CC      /home/alamot/3dsp/driver_src/bus/3dspusbbus.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/bus/3dspusbbus.ko
+  CC      /home/alamot/3dsp/driver_src/new_bluetooth/3dspusbbt.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/new_bluetooth/3dspusbbt.ko
+  CC      /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtpriv.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/private/new_bluetooth_priv/3dspusbbtpriv.ko
+  CC      /home/alamot/3dsp/driver_src/private/wlan_priv/3dspusbwlanpriv.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/private/wlan_priv/3dspusbwlanpriv.ko
+  CC      /home/alamot/3dsp/driver_src/wlan/3dspusbwlan.mod.o
+  LD [M]  /home/alamot/3dsp/driver_src/wlan/3dspusbwlan.ko
+make[1]: Leaving directory `/usr/src/linux-headers-3.8.0-19-generic'
+cp -f 3dspcode.bin /usr/local/3DSP/usb/
+cp -f bus/3dspusbbus.ko /usr/local/3DSP/usb/
+cp -f new_bluetooth/3dspusbbt.ko /usr/local/3DSP/usb/
+cp -f wlan/3dspusbwlan.ko /usr/local/3DSP/usb/
+cp -f private/new_bluetooth_priv/3dspusbbtpriv.ko /usr/local/3DSP/usb/
+cp -f private/wlan_priv/3dspusbwlanpriv.ko /usr/local/3DSP/usb/
+cp -f tdspusbcardinit /etc/init.d/
+chmod 755 /etc/init.d/tdspusbcardinit
+Inserting modules...
+insmod /usr/local/3DSP/usb/3dspusbbus.ko
+insmod /usr/local/3DSP/usb/3dspusbwlanpriv.ko
+insmod /usr/local/3DSP/usb/3dspusbwlan.ko
+insmod /usr/local/3DSP/usb/3dspusbbtpriv.ko
+insmod /usr/local/3DSP/usb/3dspusbbt.ko
+sleep 0.5
+Creating devices file for 3DSP driver...
+mknod  /dev/tdspusbbus c `awk '$2=="3dspusbbus" {print $1}' /proc/devices` 0
+cp: cannot stat ‘applications/bin/3dspcode.bin’: No such file or directory
+Makefile:119: warning: overriding commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:115: warning: ignoring old commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:119: warning: overriding commands for target `WiFi'
+Makefile:115: warning: ignoring old commands for target `WiFi'
+Makefile:119: warning: overriding commands for target `Radar'
+Makefile:115: warning: ignoring old commands for target `Radar'
+test ! -d /usr/share/doc/3dsp-wifi-radar || rm -rf /usr/share/doc/3dsp-wifi-radar
+test ! -e /etc/init.d/wifi-radar || rm /etc/init.d/wifi-radar
+test ! -e /usr/share/pixmaps/wifi-radar.svg || rm /usr/share/pixmaps/wifi-radar.svg	
+test ! -e /usr/share/pixmaps/wifi-radar.png || rm /usr/share/pixmaps/wifi-radar.png
+test ! -e /usr/share/pixmaps/wifi_radar_32x32.png || rm /usr/share/pixmaps/wifi_radar_32x32.png
+test ! -e /usr/share/pixmaps/connected1.png || rm /usr/share/pixmaps/connected1.png
+test ! -e /usr/share/pixmaps/connected2.png || rm /usr/share/pixmaps/connected2.png
+test ! -e /usr/share/pixmaps/connected3.png || rm /usr/share/pixmaps/connected3.png
+test ! -e /usr/share/pixmaps/connected4.png || rm /usr/share/pixmaps/connected4.png
+test ! -e /usr/share/applications/wifi-radar.desktop || rm /usr/share/applications/wifi-radar.desktop
+test ! -d /etc/security/console.apps || test ! -e /etc/security/console.apps/3dsp-wifi-radar-pam || rm /etc/security/console.apps/3dsp-wifi-radar-pam
+test ! -d /etc/pam.d || test ! -e /etc/pam.d/3dsp-wifi-radar-pam || rm /etc/pam.d/3dsp-wifi-radar-pam
+test ! -e /usr/sbin/3dsp-wifi-radar || rm /usr/sbin/3dsp-wifi-radar
+test ! -e /etc/wifi-radar/wifi-radar.conf || rm /etc/wifi-radar/wifi-radar.conf
+test ! -e /etc/wifi-radar/Makefile || rm /etc/wifi-radar/Makefile
+Makefile:119: warning: overriding commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:115: warning: ignoring old commands for target `/home/alamot/3dsp/applications/3dsp-wifi-radar/tmp/wifi-radar-3DSP'
+Makefile:119: warning: overriding commands for target `WiFi'
+Makefile:115: warning: ignoring old commands for target `WiFi'
+Makefile:119: warning: overriding commands for target `Radar'
+Makefile:115: warning: ignoring old commands for target `Radar'
+cp wifi-radar wifi-radar.tmp
+perl -pi -e 's#^WIFI_RADAR_VERSION\s+=.*#WIFI_RADAR_VERSION = "3DSP WiFi Radar 0.3.7"#' wifi-radar.tmp
+perl -pi -e 's#^CONF_FILE\s+=.*#CONF_FILE = "/etc/wifi-radar/wifi-radar.conf"#' wifi-radar.tmp
+test -e /sbin/wpa_supplicant || perl -pi -e 's#^WPA_SUPPLICANT_COMMAND\s+=.*#WPA_SUPPLICANT_COMMAND = "/usr/sbin/wpa_supplicant"#' wifi-radar.tmp
+mv wifi-radar.tmp wifi-radar.localized
+cp wifi-radar.desktop wifi-desktop.tmp
+test ! -e /usr/bin/su-to-root || test ! -e /usr/bin/gksudo || perl -pi -e 's|^Exec=.*|Exec=su-to-root -X -c /usr/sbin/3dsp-wifi-radar|' wifi-desktop.tmp
+test -e /usr/bin/su-to-root || test -e /usr/bin/gksudo || perl -pi -e 's|^Exec=.*|Exec=3dsp-wifi-radar-pam|' wifi-desktop.tmp
+ln -sf /usr/bin/consolehelper /usr/sbin/3dsp-wifi-radar-pam
+echo USER=root > wifi-radar-pam.tmp
+echo PROGRAM=/usr/sbin/3dsp-wifi-radar >> wifi-radar-pam.tmp
+echo SESSION=true >> wifi-radar-pam.tmp
+echo "#%PAM-1.0" > wifi-radar-pam.tp2
+echo "auth       sufficient   pam_rootok.so" >> wifi-radar-pam.tp2
+echo "auth       sufficient   pam_timestamp.so" >> wifi-radar-pam.tp2
+echo "#auth       required     pam_stack.so service=system-auth" >> wifi-radar-pam.tp2
+echo "auth       required     pam_console.so" >> wifi-radar-pam.tp2
+echo "session    required     pam_permit.so" >> wifi-radar-pam.tp2
+echo "session    optional     pam_xauth.so" >> wifi-radar-pam.tp2
+echo "session    optional     pam_timestamp.so" >> wifi-radar-pam.tp2
+echo "account    required     pam_permit.so" >> wifi-radar-pam.tp2
+test -d /etc/wifi-radar || install -d -m 755 /etc/wifi-radar
+test -e /etc/wifi-radar/wifi-radar.conf || install -m 644 wifi-radar.conf	/etc/wifi-radar
+test -e /etc/wifi-radar/Makefile || install -m 644 Makefile	/etc/wifi-radar
+test -d /usr/sbin || install -d -m 755 /usr/sbin
+install -m 755 wifi-radar.localized	/usr/sbin/3dsp-wifi-radar
+rm wifi-radar.localized
+test -d /usr/share/doc/3dsp-wifi-radar || install -d -m 755 /usr/share/doc/3dsp-wifi-radar
+install -m 644 doc/3dsp-wifi-radar.html 		/usr/share/doc/3dsp-wifi-radar
+test -d /usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files || install -d -m 755 /usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image001.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image002.gif 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image003.gif 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image004.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image005.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image006.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image007.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+install -m 644 doc/3dsp-wifi-radar.files/image008.jpg 		/usr/share/doc/3dsp-wifi-radar/3dsp-wifi-radar.files
+test -d /etc/init.d || install -d -m 755 /etc/init.d
+install -m 755 init_script 		/etc/init.d/wifi-radar
+test -d /usr/share/pixmaps || install -d -m 755 /usr/share/pixmaps
+install -m 644 pixmaps/wifi-radar.svg	/usr/share/pixmaps
+install -m 644 pixmaps/wifi-radar.png	/usr/share/pixmaps
+install -m 644 pixmaps/wifi_radar_32x32.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected1.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected2.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected3.png	/usr/share/pixmaps
+install -m 644 pixmaps/connected4.png	/usr/share/pixmaps
+test -d /usr/share/applications || install -d -m 755 /usr/share/applications
+install -m 644 wifi-desktop.tmp		/usr/share/applications/wifi-radar.desktop
+rm -f wifi-desktop.tmp
+test -e /sbin/wpa_supplicant || test -d /etc/pam.d || install -d -m 755 /etc/pam.d
+test -e /sbin/wpa_supplicant || install -m 644 wifi-radar-pam.tp2 /etc/pam.d/3dsp-wifi-radar-pam
+test ! -e wifi-radar-pam.tp2 || rm wifi-radar-pam.tp2
+test -e /sbin/wpa_supplicant || test -d /etc/security/console.apps || install -d -m 755 /etc/security/console.apps
+test -e /sbin/wpa_supplicant || install -m 644 wifi-radar-pam.tmp /etc/security/console.apps/3dsp-wifi-radar-pam
+test ! -e wifi-radar-pam.tmp || rm wifi-radar-pam.tmp
+test -e /sbin/iwconfig || test ! -d packages || test ! -e packages/libiw28_28-1+etchnhalf.1_i386.deb || dpkg -i -GE packages/libiw28_28-1+etchnhalf.1_i386.deb
+test -e /sbin/iwconfig || test ! -d packages || test ! -e packages/wireless-tools_28-1+etchnhalf.1_i386.deb || dpkg -i -GE packages/wireless-tools_28-1+etchnhalf.1_i386.deb
+test -e /usr/bin/python || test ! -d packages || test ! -e packages/python-notify_0.1.1-2+b1_i386.deb || dpkg -i -GE packages/python-notify_0.1.1-2+b1_i386.deb
+cp: cannot stat ‘tdspusbcardinit’: No such file or directory
+Error: could not insert module /usr/local/3DSP/usb/3dspusbbus.ko: File exists
+Error: could not insert module /usr/local/3DSP/usb/3dspusbwlanpriv.ko: File exists
+Error: could not insert module /usr/local/3DSP/usb/3dspusbwlan.ko: File exists
+Error: could not insert module /usr/local/3DSP/usb/3dspusbbtpriv.ko: File exists
+Error: could not insert module /usr/local/3DSP/usb/3dspusbbt.ko: File exists
+mknod: ‘/dev/tdspusbbus’: File exists
+Start rfcomm/pand server......
+sudo: pand: command not found
+Add SDP services......
+the devices you want to add:---combo
+
+call after system
+^_^ add bluetooth&wlan success!

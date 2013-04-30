@@ -1,0 +1,20 @@
+Release notes for BlueW-2310U_3.0.4_100820:
+
+1. WLAN supported functions:
+    1) BSS encryption mode: Disable, WEP OPEN, WEP SHARED, WPA/WPA2-PSK TKIP, WPA/WPA2-PSK CCMP;
+    2) IBSS encryption mode: Disable, WEP OPEN;
+    3) Region: US, Europe, Japan, RestofWorld;
+    4) Hotkey;
+    5) Roaming;
+    6) Beacon lost;
+    7) Hide SSID;
+    8) Power Management;
+    9) 3DSP-WiFi-Radar 0.3.7.
+
+2. BT supported functions:
+    1) BT1.2 protocal;
+    2) BT2.0 protocal;
+    3) All profile;
+
+3. Not support functions:
+    1) BT: Sniff;

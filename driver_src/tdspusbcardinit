@@ -1,0 +1,48 @@
+#! /bin/sh
+#
+# chkconfig: 2345 98 89
+# description: 3DSP usb card initialization
+#
+#
+### BEGIN INIT INFO
+# Provides: tdspusbcardinit
+# Required-Start:    $bluetooth
+# Required-Stop:     
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: 3DSP usb card initialization
+### END INIT INFO
+
+#set -e
+
+modprobe bluetooth
+case "$1" in
+  start)
+    insmod /usr/local/3DSP/usb/3dspusbbus.ko
+    insmod /usr/local/3DSP/usb/3dspusbwlanpriv.ko
+    insmod /usr/local/3DSP/usb/3dspusbwlan.ko
+    insmod /usr/local/3DSP/usb/3dspusbbtpriv.ko
+    insmod /usr/local/3DSP/usb/3dspusbbt.ko
+    sleep 0.5
+    mknod  /dev/tdspusbbus c `awk '$2=="3dspusbbus" {print $1}' /proc/devices` 0
+    uwbtool -a combo
+    ;;
+  stop)
+    uwbtool -r
+    rm -f /dev/tdspusbbus
+    rmmod 3dspusbbt
+    rmmod 3dspusbbtpriv
+    rmmod 3dspusbwlan
+    rmmod 3dspusbwlanpriv
+    rmmod 3dspusbbus
+    ;;
+  restart|force-reload)
+    $0 stop
+    $0 start
+    ;;
+  *)
+    exit 1
+    ;;
+esac
+
+exit 0

@@ -1,0 +1,51 @@
+
+Install:
+
+   cd <source_dir>
+   make; 
+   make install
+   #the executable file 'uwbtool' is in '/usr/bin/' after run 'make install'
+
+   	
+*******************************************************************************
+Uninstall:
+  cd <source_dir>
+  make uninstall
+
+*******************************************************************************
+Clean:
+
+  make clean
+   
+*******************************************************************************  
+   
+use:
+
+uwbtool [options]
+
+   Application options
+
+  -q, --query                             query the current serial no, such as:
+                                                -q or --query
+                                 			
+  -a, --add=DEVICE                        add a device, such as: bt, wlan, combo
+  
+  -d, --download=DEVICE                   add a device, download code from file
+                                                such as: bt, wlan, combo
+                                 			
+  -r, --remove                            remove all the tdsp device,such as:
+                                                -r or --remove
+                                 			
+  -v, --version                           query the card version, such as:
+                                                -v or --version
+  
+  -h, --help                              for the help
+
+*******************************************************************************
+
+
+Notes:   
+	1.  Be sure that the writable file 'wbusb.conf' is in '/usr/local/3DSP/usb/'!
+	
+	2.  The command 'uwbtool -r' and 'uwbtool -a'  can not be used during uwb program is running.
+	

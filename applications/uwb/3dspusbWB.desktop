@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Encoding=UTF-8
+Name=3DSP uWB
+Comment=3DSPCard_WB
+Comment[zh_CN]=3DSPCard切换工具wb
+Icon=3dspusbWB.png
+Exec=uwb
+Terminal=false
+Type=Application
+Categories=GNOME;GTK;Utility;
+StartupNotify=true
+
