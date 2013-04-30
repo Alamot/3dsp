@@ -48,24 +48,20 @@ x86_32:
 
     $ sudo ln-sf /usr/lib/i386-linux-gnu/libnotify.so.1.1.3 /usr/lib/i386-linux-gnu/libnotify.so.1 
   
-f) Using GIT download the device drivers:
-  
-    $ Git clone https://github.com/Alamot/3dsp.git
+f) With all dependencies satisfied, just clone this git repository and run Install\_3DSP.sh:
 
-g) With all dependencies satisfied, just clone this git repository and run Install\_3DSP.sh:
-
-    $ git clone http://github.com/reyiyo/3dsp.git
+    $ git clone http://github.com/Alamot/3dsp.git
     $ cd 3dsp
     $ sudo bash Install_3DSPUSB.sh
 
 If you don't use git, just download the source from Github, extract it and run Install\_3DSP.sh:
 
-    $ curl http://github.com/reyiyo/3dsp/tarball/master -o 3dsp.tar.gz
+    $ curl http://github.com/Alamot/3dsp/tarball/master -o 3dsp.tar.gz
     $ tar -xvzf 3dsp.tar.gz
     $ cd 3dsp
     $ sudo bash Install_3DSP.sh 
 
-h) reboot your system & enjoy. :)
+g) reboot your system & enjoy. :)
 
 
 [ACKNOWLEDGEMENTS]
