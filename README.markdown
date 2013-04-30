@@ -12,11 +12,11 @@ You can download the library libnotify1 with the wget tool:
 
 x86_64: 
 
-    $ wg et-c http://mirror.pnl.gov/ubuntu//pool/main/libn/libnotify/libnotify1_0.4.5-1ubuntu3_amd64.deb
+    $ wget -c http://mirror.pnl.gov/ubuntu//pool/main/libn/libnotify/libnotify1_0.4.5-1ubuntu3_amd64.deb
 
 x86_32:
 
-    $ wget-c http://mirror.pnl.gov/ubuntu//pool/main/libn/libnotify/libnotify1_0.4.5-1ubuntu3_i386.deb 
+    $ wget -c http://mirror.pnl.gov/ubuntu//pool/main/libn/libnotify/libnotify1_0.4.5-1ubuntu3_i386.deb 
 
 c) - Install the library
 
@@ -32,21 +32,21 @@ d) Copy the library libnotify1 to the respective folder (x86_64 / x86_32)
 
 x86_64: 
 
-    $ sudo cp / usr/lib/libnotify.so.1.1.3 / usr/lib/x86_64-linux-gnu /  
+    $ sudo cp /usr/lib/libnotify.so.1.1.3 /usr/lib/x86_64-linux-gnu/  
 
 x86_32: 
 
-    $ sudo cp / usr/lib/libnotify.so.1.1.3 / usr / lib / i386-linux-gnu /
+    $ sudo cp /usr/lib/libnotify.so.1.1.3 /usr/lib/i386-linux-gnu/
   
 e) make symlink with the command:
 
 x86_64: 
 
-    $ sudo ln-sf / usr/lib/x86_64-linux-gnu/libnotify.so.1.1.3 / usr/lib/x86_64-linux-gnu/libnotify.so.1 
+    $ sudo ln-sf /usr/lib/x86_64-linux-gnu/libnotify.so.1.1.3 /usr/lib/x86_64-linux-gnu/libnotify.so.1 
 
 x86_32:
 
-    $ sudo ln-sf / usr / lib/i386-linux-gnu/libnotify.so.1.1.3 / usr/lib/i386-linux-gnu/libnotify.so.1 
+    $ sudo ln-sf /usr/lib/i386-linux-gnu/libnotify.so.1.1.3 /usr/lib/i386-linux-gnu/libnotify.so.1 
   
 f) Using GIT download the device drivers:
   
