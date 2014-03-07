@@ -1,4 +1,8 @@
-#Patched 3DSP USB driver (tested on Ubuntu 13.04 with network manager)
+#Patched 3DSP USB driver (tested on Ubuntu 12.04 with network manager)
+
+NOTES:
+This driver was tested to be working fine with Wifi. BT was not tested yet.
+ALso, please check and make sure your device appears as USB device as in lsusb command.
 
 a) First, you should install all dependencies:
 
