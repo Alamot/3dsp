@@ -265,7 +265,7 @@ void prt_time()
 
 static int hci_usb_open(struct hci_dev *hdev)
 {
-	void *devExt = hci_get_drvdata(hdev);
+	void *devExt = dev_get_drvdata(&hdev->dev);
 
 	if (test_and_set_bit(HCI_RUNNING, &hdev->flags))
 	{   
@@ -283,7 +283,7 @@ static int hci_usb_open(struct hci_dev *hdev)
 	/* Try to be MASTER aggressively */
 	hdev->link_mode |= HCI_LM_MASTER;
 
-	Bluetooth_Adap_Init(hci_get_drvdata(hdev));
+	Bluetooth_Adap_Init(dev_get_drvdata(&hdev->dev));
     
 	if(combodrv){
 		Bluetooth_Adap_Set_FirmVer(devExt);
@@ -296,7 +296,7 @@ static int hci_usb_close(struct hci_dev *hdev)
 {
 	void *devExt = NULL;
 
-	devExt = hci_get_drvdata(hdev);
+	devExt = dev_get_drvdata(&hdev->dev);
 
 	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags)){
 		printk("%s: %s NOT Running\n", __FUNCTION__, hdev->name);    
@@ -325,7 +325,7 @@ static int hci_usb_send_frame(struct sk_buff *skb)
 {
 	int retval = 0;
 	struct hci_dev *hdev = (struct hci_dev *) skb->dev;
-	void	*devExt = hci_get_drvdata(hdev);
+	void	*devExt = dev_get_drvdata(&hdev->dev);
     
 	if (!hdev) {
 		printk("%s: Frame for uknown device (hdev=NULL)\n", __FUNCTION__);
@@ -387,7 +387,7 @@ static int hci_usb_ioctl(struct hci_dev *hdev, unsigned int cmd, unsigned long a
 	struct dbg_usb_reg *u_reg = NULL;
 	int errcode = 0;
 
-	void *devExt = hci_get_drvdata(hdev);
+	void *devExt = dev_get_drvdata(&hdev->dev);
 	
 	if (!test_bit(HCI_RUNNING, &hdev->flags))
 	{
@@ -559,7 +559,7 @@ void *register_HCI_device(void *devExt)
 		goto end;
 	}
 
-	hci_set_drvdata(hdev, devExt);
+	dev_set_drvdata(&hdev->dev, devExt);
 	SET_HCIDEV_DEV(hdev, &intf->dev);
 	hdev->open		= hci_usb_open;
 	hdev->close		= hci_usb_close;
