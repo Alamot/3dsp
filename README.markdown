@@ -5,7 +5,7 @@ a) First, you should install all dependencies:
     $ sudo apt-get install build-essential linux-headers-`uname -r`
 
 
-*****************************IF YOU HAVE UBUNTU 14.04+ JUMP TO STEP (f).*********************************
+**********IF YOU HAVE UBUNTU 14.04+ JUMP TO STEP (f).*****************
 
 
 
