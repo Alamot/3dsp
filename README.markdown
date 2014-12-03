@@ -5,7 +5,8 @@ a) First, you should install all dependencies:
     $ sudo apt-get install build-essential linux-headers-`uname -r`
 
 
-***********IF YOU HAVE UBUNTU 14.04+ JUMP TO STEP (f).***********************
+*****************************IF YOU HAVE UBUNTU 14.04+ JUMP TO STEP (f).*********************************
+
 
 
 b) Download and install the library libnotify1 through the link:
@@ -52,7 +53,9 @@ x86_32:
 
     $ sudo ln-sf /usr/lib/i386-linux-gnu/libnotify.so.1.1.3 /usr/lib/i386-linux-gnu/libnotify.so.1 
 
-********************************************************************************************
+
+*******************************************************************************************************
+
 
 f) With all dependencies satisfied, just clone this git repository and run Install\_3DSP.sh:
 
