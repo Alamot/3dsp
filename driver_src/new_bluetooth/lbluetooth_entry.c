@@ -104,7 +104,7 @@ struct lmp_dump{
 unsigned int combodrv = 1;
 module_param(combodrv, uint, S_IRUGO);
 
-int hci_notify_frame(void *databuf);
+int hci_notify_frame(struct hci_dev *hdev, void *databuf);
 
 int tdsp_print(const char * fmt,...) 
 {
@@ -339,7 +339,7 @@ static int hci_usb_send_frame(struct sk_buff *skb)
 
 	if(!Bluetooth_Adap_IsOpen(devExt))
 	{
-		printk("%s: Device %s NOT OPENED\n", __FUNCTION__, hdev->name);    
+		printk("%s: Device %s NOT OPENED\n ", __FUNCTION__, hdev->name);    
 		return -EIO;
 	}
 
@@ -567,7 +567,7 @@ void *register_HCI_device(void *devExt)
 	hdev->send		= hci_usb_send_frame;
 	//hdev->destruct	= hci_usb_destruct;
 	hdev->notify		= hci_usb_notify;
-	hdev->ioctl		= hci_usb_ioctl;
+	//hdev->ioctl		= hci_usb_ioctl;
     
 	//hdev->owner = THIS_MODULE;
 
@@ -856,10 +856,10 @@ static void __exit _bluetooth_usb_exit(void)
 	usb_deregister(&_bluetooth_usb_driver);
 }
 
-int hci_notify_frame(void *databuf)
+int hci_notify_frame(struct hci_dev *hdev, void *databuf)
 {
 	struct sk_buff *skb = (struct sk_buff *)databuf;	
-	hci_recv_frame(skb);
+	hci_recv_frame(hdev, skb);
 
 	return 0;
 }
