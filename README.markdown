@@ -1,4 +1,8 @@
-#Patched 3DSP USB driver [tested on Linux Lite 2.2 (based on Ubuntu 14.04) & Ubuntu 13.04 with network manager, wifi is working, bluetooth is not]
+#Patched 3DSP USB driver
+
+* Tested on Linux Lite 2.2 (based on Ubuntu 14.04) & Ubuntu 13.04 with network manager
+* Wifi is working
+* Bluetooth is NOT working
 
 a) First, you should install all dependencies:
 
