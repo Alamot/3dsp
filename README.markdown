@@ -9,7 +9,7 @@ a) First, you should install all dependencies:
     $ sudo apt-get install build-essential linux-headers-`uname -r`
 
 
-**********IF YOU HAVE Linux Lite 2.2/UBUNTU 14.04+ JUMP TO STEP (f).*****************
+**********IF YOU HAVE Linux Lite 2.2 JUMP TO STEP (f).*****************
 
 
 
